@@ -1,7 +1,7 @@
 {
     "files.exclude": {
         "**/.DS_Store": true,
-        "**/.git": true,
+        "**/.git": false,
         "**/.vs": true,
         "**/.gitmodules": true,
         "**/.vsconfig": true,
@@ -67,6 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "kippenspell.slnx",
+    "dotnet.defaultSolution": "VR-Experience-Groep-Project.slnx",
     "dotnet.enableWorkspaceBasedDevelopment": false
 }
