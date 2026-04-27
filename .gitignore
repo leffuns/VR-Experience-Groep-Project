@@ -102,6 +102,7 @@ InitTestScene*.unity*
 *.csproj
 *.sln
 /VR-Experience-Groep-Project.slnx
+VR-Experience-Groep-Project.sln
 *.unityproj
 *.user
 *.userprefs
