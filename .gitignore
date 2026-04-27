@@ -97,3 +97,26 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Unity gegenereerde Visual Studio/Rider project bestanden
+*.csproj
+*.sln
+/VR-Experience-Groep-Project.slnx
+*.unityproj
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.opendb
+*.db
+
+# Specifieke mappen voor IDE's
+.vs/
+.gradle/
+ExportTemp/
+Build/
+Builds/
+Logs/
+UserSettings/
