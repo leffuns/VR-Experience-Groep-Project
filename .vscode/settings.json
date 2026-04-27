@@ -59,7 +59,7 @@
     "files.associations": {
         "*.asset": "yaml",
         "*.meta": "yaml",
-        "*.prefab": "yaml", 
+        "*.prefab": "yaml",
         "*.unity": "yaml"
     },
     "explorer.fileNesting.enabled": true,
@@ -67,6 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "kippenspell.slnx",
+    "dotnet.defaultSolution": "VR-Experience-Groep-Project.slnx",
     "dotnet.enableWorkspaceBasedDevelopment": false
 }
