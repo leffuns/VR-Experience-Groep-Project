@@ -180,7 +180,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.ML-Agents::Unity.MLAgents.Policies.BehaviorParameters
   m_BrainParameters:
-    VectorObservationSize: 1
+    VectorObservationSize: 8
     NumStackedVectorObservations: 1
     m_ActionSpec:
       m_NumContinuousActions: 0
@@ -219,6 +219,10 @@ MonoBehaviour:
   obstaclesLayer:
     serializedVersion: 2
     m_Bits: 0
+  maxHonger: 100
+  hongerAfnamePerStap: 0.1
+  hongerHerstelPerSnack: 40
+  snacks: []
 --- !u!114 &3547814680030318301
 MonoBehaviour:
   m_ObjectHideFlags: 0
