@@ -25,7 +25,7 @@ public class chicken_agent : Agent
     {
         // Zet hier logica om de positie van de kip en de schutter te resetten 
         // als de kip wordt geraakt of als de tijd om is.
-        rb.velocity = Vector3.zero;
+        rb.linearVelocity = Vector3.zero;
     }
 
     public override void CollectObservations(VectorSensor sensor)

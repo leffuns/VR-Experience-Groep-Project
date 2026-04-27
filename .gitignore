@@ -101,6 +101,7 @@ InitTestScene*.unity*
 # Unity gegenereerde Visual Studio/Rider project bestanden
 *.csproj
 *.sln
+/VR-Experience-Groep-Project.slnx
 *.unityproj
 *.user
 *.userprefs
