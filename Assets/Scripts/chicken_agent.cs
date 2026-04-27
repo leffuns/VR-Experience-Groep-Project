@@ -133,14 +133,23 @@ public class chicken_agent : Agent
         // Controleer of de kip een snack aanraakt
         if (other.CompareTag("Snack"))
         {
-            // Eet het op (verdwijnt uit de scene)
-            other.gameObject.SetActive(false);
-            
-            // Herstel honger, maar ga niet over de maximale limiet heen
-            huidigeHonger = Mathf.Min(huidigeHonger + hongerHerstelPerSnack, maxHonger);
-            
-            // Geef een flinke beloning voor het zoeken van voedsel!
-            AddReward(0.5f);
+            // Alleen eten als huidigeHonger lager is dan de maximale honger
+            if (huidigeHonger < maxHonger-5)
+            {
+                // Eet het op (verdwijnt uit de scene)
+                other.gameObject.SetActive(false);
+
+                // Herstel honger, maar ga niet over de maximale limiet heen
+                huidigeHonger = Mathf.Min(huidigeHonger + hongerHerstelPerSnack, maxHonger);
+
+                // Geef een flinke beloning voor het zoeken van voedsel!
+                AddReward(0.5f);
+            }
+            else
+            {
+                // Optioneel: Geef een kleine straf of doe niets als de kip vol zit
+                // AddReward(-0.01f); 
+            }
         }
     }
 }
