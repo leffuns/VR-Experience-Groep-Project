@@ -48,6 +48,9 @@ public class LevelSpawner : Agent
     public int colaCount = 5;
     public int nuggetCount = 5;
 
+    [Header("Collision Layers")]
+    public LayerMask obstaclesLayer;  // Layer for obstacles to avoid spawning inside objects
+
     // ============================================================
     // PRIVATE PARENT OBJECTS - Created at runtime to organize the scene
     // Each type gets its own parent for clean hierarchy
@@ -360,6 +363,7 @@ public class LevelSpawner : Agent
     private Vector3 GetPositionAvoidingHunter()
     {
         Vector3 hunterXZ = new Vector3(hunterPosition.x, 0, hunterPosition.z);
+        float checkRadius = 1.0f;  // Radius to check for collision
 
         for (int attempt = 0; attempt < 50; attempt++)
         {
@@ -368,7 +372,17 @@ public class LevelSpawner : Agent
 
             if (Vector3.Distance(candidateXZ, hunterXZ) >= hunterMinDistance)
             {
-                return candidate;
+                // Check if position is free of obstacles
+                if (obstaclesLayer.value != 0 && 
+                    Physics.OverlapSphere(candidate, checkRadius, obstaclesLayer).Length == 0)
+                {
+                    return candidate;
+                }
+                else if (obstaclesLayer.value == 0)
+                {
+                    // If no layer set, just return position
+                    return candidate;
+                }
             }
         }
 

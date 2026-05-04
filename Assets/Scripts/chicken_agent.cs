@@ -35,7 +35,7 @@ public class chicken_agent : Agent
     private float huidigeHonger;
     private Rigidbody rb;
 
-    public override void Initialize()
+public override void Initialize()
     {
         rb = GetComponent<Rigidbody>();
     }
@@ -67,10 +67,28 @@ public class chicken_agent : Agent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        float moveX = actions.ContinuousActions[0];
-        float moveZ = actions.ContinuousActions[1];
+        Debug.Log("[OnActionReceived] Called!");
+        
+        // Direct input as primary source
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveZ = Input.GetAxisRaw("Vertical");
+        
+        Debug.Log($"[Input] Direct - X: {moveX}, Z: {moveZ}");
+        
+        // Fallback to ML-Agent actions if no input
+        if (moveX == 0 && moveZ == 0)
+        {
+            moveX = actions.ContinuousActions[0];
+            moveZ = actions.ContinuousActions[1];
+            Debug.Log($"[Actions] ML-Agent fallback - X: {moveX}, Z: {moveZ}");
+        }
+
+        Debug.Log($"[OnActionReceived] Final Actions - X: {moveX}, Z: {moveZ}");
 
         Vector3 move = new Vector3(moveX, 0, moveZ).normalized;
+        
+        Debug.Log($"[Movement] Move direction: {move}, Force: {move * moveSpeed}");
+        
         rb.AddForce(move * moveSpeed);
 
         // Honger systeem verwerken
@@ -99,8 +117,13 @@ public class chicken_agent : Agent
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         ActionSegment<float> continuousActions = actionsOut.ContinuousActions;
-        continuousActions[0] = Input.GetAxisRaw("Horizontal");
-        continuousActions[1] = Input.GetAxisRaw("Vertical");
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+        
+        Debug.Log($"[Heuristic] Input - Horizontal: {h}, Vertical: {v}");
+        
+        continuousActions[0] = h;
+        continuousActions[1] = v;
     }
 
     private bool KanSchutterZien()
@@ -173,5 +196,11 @@ public class chicken_agent : Agent
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectieRadius);
+        
+        if (Application.isPlaying && rb != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(transform.position, 0.3f);
+        }
     }
 }

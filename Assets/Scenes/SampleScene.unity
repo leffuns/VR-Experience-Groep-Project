@@ -1128,6 +1128,18 @@ PrefabInstance:
       propertyPath: shooter
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 4728969868354376613, guid: d919e68dd41606341a8222a3e0201dc3, type: 3}
+      propertyPath: colaCount
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 4728969868354376613, guid: d919e68dd41606341a8222a3e0201dc3, type: 3}
+      propertyPath: nuggetCount
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 4728969868354376613, guid: d919e68dd41606341a8222a3e0201dc3, type: 3}
+      propertyPath: chickenCount
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4759254527213919663, guid: d919e68dd41606341a8222a3e0201dc3, type: 3}
       propertyPath: shooter
       value: 
