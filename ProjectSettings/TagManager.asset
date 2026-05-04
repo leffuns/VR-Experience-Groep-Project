@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Snack
+  - Bullet
   layers:
   - Default
   - TransparentFX
