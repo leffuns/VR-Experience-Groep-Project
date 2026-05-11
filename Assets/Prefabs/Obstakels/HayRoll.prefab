@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3048284763589469652}
   - component: {fileID: 9068768959343215227}
   - component: {fileID: 3801585426947108932}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: HayRoll
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -110,6 +110,6 @@ MeshCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -7480269287083681103, guid: 4f61108a441c0424994244421f96da43, type: 3}
