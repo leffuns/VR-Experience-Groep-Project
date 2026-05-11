@@ -1,7 +1,9 @@
 using UnityEngine;
 using Unity.MLAgents;
+using Unity.XR.CoreUtils;
+using System.Collections;
 
-public class LevelSpawner : Agent
+public class LevelSpawner : MonoBehaviour
 {
     // ============================================================
     // PREFAB REFERENCES - Drag & drop your prefabs here
@@ -61,6 +63,9 @@ public class LevelSpawner : Agent
     private GameObject colaSnacksParent;
     private GameObject nuggetSnacksParent;
     private Vector3 xrOriginPosition;
+    
+    private Vector3 initialPlayerPosition;
+    private Quaternion initialPlayerRotation;
 
     // ============================================================
     // INITIALIZATION - Creates parent containers at runtime
@@ -69,6 +74,16 @@ public class LevelSpawner : Agent
     private void Awake()
     {
         CreateParentObjects();
+    }
+
+    private void Start()
+    {
+        if (xrOrigin != null)
+        {
+            initialPlayerPosition = xrOrigin.position;
+            initialPlayerRotation = xrOrigin.rotation;
+        }
+        ResetLevel();
     }
 
     private void CreateParentObjects()
@@ -103,8 +118,8 @@ public class LevelSpawner : Agent
         ClearAll();
         SpawnObstacles();
         ResetPlayerPosition();
-        SpawnChickens();
         SpawnSnacks();
+        RespawnOrUpdateChickens();
     }
 
     /// <summary>
@@ -116,7 +131,7 @@ public class LevelSpawner : Agent
     {
         EnsureParentObjectsExist();  // Safety check in case called before Awake
         ClearChildren(obstaclesParent);
-        ClearChildren(chickensParent);
+        // We do NOT clear chickens here, because destroying an active Agent crashes ML-Agents.
         ClearChildren(colaSnacksParent);
         ClearChildren(nuggetSnacksParent);
     }
@@ -252,8 +267,59 @@ public class LevelSpawner : Agent
     {
         if (xrOrigin == null) return;
 
-        xrOrigin.localPosition = new Vector3(0, 0, 0);
-        xrOriginPosition = xrOrigin.position; // Track the world position for distance checks
+        Transform playerRoot = xrOrigin;
+        
+        // --- 1. PROBEER DE OFFICIËLE XR ORIGIN TELEPORTATIE ---
+        // Dit is essentieel als de speler fysiek heeft rondgelopen in z'n kamer (lokale camera offset)
+        XROrigin originComponent = playerRoot.GetComponent<XROrigin>();
+        if (originComponent == null)
+        {
+            originComponent = playerRoot.GetComponentInParent<XROrigin>();
+        }
+
+        if (originComponent != null)
+        {
+            // Omdat MoveCameraToWorldLocation de CAMERA (het hoofd) verplaatst, moeten we de hoogte van de speler optellen bij de spawn positie.
+            // Anders wordt het hoofd op de grond (Y=0) geplaatst.
+            Vector3 targetHeadPosition = initialPlayerPosition;
+            targetHeadPosition.y += originComponent.CameraInOriginSpaceHeight;
+
+            // Verplaats de CAMERA exact naar de berekende hoofd-positie
+            originComponent.MoveCameraToWorldLocation(targetHeadPosition);
+            
+            // Match ook de rotatie zodat hij weer recht naar voren kijkt
+            originComponent.MatchOriginUpCameraForward(Vector3.up, initialPlayerRotation * Vector3.forward);
+            
+            xrOriginPosition = originComponent.transform.position;
+            return;
+        }
+
+        // --- 2. FALLBACK ALS HET GEEN XR ORIGIN IS ---
+        CharacterController cc = playerRoot.GetComponent<CharacterController>();
+        
+        if (cc == null)
+        {
+            cc = playerRoot.GetComponentInParent<CharacterController>();
+            if (cc != null) playerRoot = cc.transform;
+        }
+
+        if (cc != null) cc.enabled = false;
+
+        Rigidbody rb = playerRoot.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.position = initialPlayerPosition;
+        }
+
+        playerRoot.position = initialPlayerPosition;
+        playerRoot.rotation = initialPlayerRotation;
+
+        Physics.SyncTransforms();
+
+        if (cc != null) cc.enabled = true;
+
+        xrOriginPosition = playerRoot.position;
     }
 
     // ============================================================
@@ -261,43 +327,50 @@ public class LevelSpawner : Agent
     // ============================================================
 
     /// <summary>
-    /// Spawns chicken agents and configures them properly.
-    /// Each chicken gets references to all snacks and the hunter.
-    /// This is why chickens are spawned after snacks and hunters.
+    /// Spawns chicken agents if needed, and repositions/updates existing ones.
+    /// Reusing the agents prevents ML-Agents from crashing during a step.
     /// </summary>
-    private void SpawnChickens()
+    private void RespawnOrUpdateChickens()
     {
         if (chickenPrefab == null) return;
 
-        // Use XR Origin transform for chicken configuration
         Transform playerTransform = xrOrigin;
         float prefabY = chickenPrefab.transform.localPosition.y;
 
-        for (int i = 0; i < chickenCount; i++)
+        // Collect all snacks from both parents into one array for the chicken
+        GameObject[] allSnacks = new GameObject[colaSnacksParent.transform.childCount + nuggetSnacksParent.transform.childCount];
+        int idx = 0;
+        foreach (Transform cola in colaSnacksParent.transform)
+        {
+            allSnacks[idx++] = cola.gameObject;
+        }
+        foreach (Transform nugget in nuggetSnacksParent.transform)
+        {
+            allSnacks[idx++] = nugget.gameObject;
+        }
+
+        // Spawn missing chickens if we don't have enough
+        int currentChickens = chickensParent.transform.childCount;
+        for (int i = currentChickens; i < chickenCount; i++)
+        {
+            Instantiate(chickenPrefab, Vector3.zero, Quaternion.identity, chickensParent.transform);
+        }
+
+        // Update all chickens (positions and references)
+        foreach (Transform child in chickensParent.transform)
         {
             Vector3 pos = GetPositionAvoidingPlayer();
             pos.y = prefabY;
-            GameObject chicken = Instantiate(chickenPrefab, pos, Quaternion.identity, chickensParent.transform);
+            child.position = pos;
 
-            chicken_agent agent = chicken.GetComponent<chicken_agent>();
+            chicken_agent agent = child.GetComponent<chicken_agent>();
             if (agent != null)
             {
-                // Collect all snacks from both parents into one array for the chicken
-                GameObject[] allSnacks = new GameObject[colaSnacksParent.transform.childCount + nuggetSnacksParent.transform.childCount];
-
-                int idx = 0;
-                foreach (Transform cola in colaSnacksParent.transform)
-                {
-                    allSnacks[idx++] = cola.gameObject;
-                }
-                foreach (Transform nugget in nuggetSnacksParent.transform)
-                {
-                    allSnacks[idx++] = nugget.gameObject;
-                }
-
-                // Configure the chicken agent
                 agent.snacks = allSnacks;
-                agent.xrOrigin = playerTransform;  // The chicken will fear this
+                agent.xrOrigin = playerTransform;
+                
+                Rigidbody rb = child.GetComponent<Rigidbody>();
+                if (rb != null) rb.linearVelocity = Vector3.zero;
             }
         }
     }
@@ -396,13 +469,22 @@ public class LevelSpawner : Agent
     // ============================================================
 
     /// <summary>
-    /// Called automatically by Unity ML-Agents when an episode ends.
     /// Resets the level by clearing and respawning everything.
     /// </summary>
-    public override void OnEpisodeBegin()
+    public void ResetLevel()
     {
-        base.OnEpisodeBegin();
+        StartCoroutine(ResetLevelRoutine());
+    }
+
+    private IEnumerator ResetLevelRoutine()
+    {
+        // Wacht tot het einde van de frame om conflicten met VR Locomotion (Update/LateUpdate) te vermijden
+        yield return new WaitForEndOfFrame();
+
         ClearAll();
-        SpawnAll();
+        SpawnObstacles();
+        ResetPlayerPosition();
+        SpawnSnacks();
+        RespawnOrUpdateChickens();
     }
 }

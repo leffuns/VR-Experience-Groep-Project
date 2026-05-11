@@ -99,7 +99,7 @@ public class chicken_agent : Agent
         {
             // Uitgehongerd = dood. Flinke straf, net als bij een kogel!
             AddReward(-1.0f);
-            EndEpisode();
+            TriggerLevelReset();
             return; // Stop verdere berekeningen in deze stap
         }
 
@@ -164,7 +164,20 @@ public class chicken_agent : Agent
         if (collision.gameObject.CompareTag("Bullet"))
         {
             AddReward(-1.0f);
-            EndEpisode();
+            TriggerLevelReset();
+        }
+    }
+
+    private void TriggerLevelReset()
+    {
+        // Reset deze kip z'n beloningen/metrics
+        EndEpisode();
+
+        // Zoek de spawner en laat die alles in het level opnieuw spawnen
+        LevelSpawner spawner = GetComponentInParent<LevelSpawner>();
+        if (spawner != null)
+        {
+            spawner.ResetLevel();
         }
     }
 
