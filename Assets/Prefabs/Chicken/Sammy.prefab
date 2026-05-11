@@ -157,10 +157,10 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
-  shooter: {fileID: 0}
+  xrOrigin: {fileID: 0}
   moveSpeed: 5
   detectieRadius: 10
-  hunterLayer:
+  xrOriginLayer:
     serializedVersion: 2
     m_Bits: 8
   obstaclesLayer:

@@ -15,7 +15,7 @@ public class LevelSpawner : Agent
 
     [Header("Character & Snack Prefabs")]
     public GameObject chickenPrefab;    // The AI chicken agent
-    public GameObject hunterPrefab;    // The enemy the chicken fears
+    public Transform xrOrigin;          // The VR player replacing the shooter
     public GameObject colaPrefab;       // Snack type 1
     public GameObject nuggetPrefab;     // Snack type 2
 
@@ -29,7 +29,7 @@ public class LevelSpawner : Agent
     public float spawnMaxX = 11f;
     public float spawnMinZ = -11f;
     public float spawnMaxZ = 11f;
-    public float hunterMinDistance = 4f;  // Minimum distance from hunter for all spawns
+    public float xrOriginMinDistance = 4f;  // Minimum distance from player for all spawns
 
     // ============================================================
     // SPAWN COUNTS - How many of each object to spawn
@@ -58,10 +58,9 @@ public class LevelSpawner : Agent
 
     private GameObject obstaclesParent;
     private GameObject chickensParent;
-    private GameObject huntersParent;
     private GameObject colaSnacksParent;
     private GameObject nuggetSnacksParent;
-    private Vector3 hunterPosition;
+    private Vector3 xrOriginPosition;
 
     // ============================================================
     // INITIALIZATION - Creates parent containers at runtime
@@ -80,9 +79,6 @@ public class LevelSpawner : Agent
 
         chickensParent = new GameObject("Chickens");
         chickensParent.transform.SetParent(transform);
-
-        huntersParent = new GameObject("Hunters");
-        huntersParent.transform.SetParent(transform);
 
         colaSnacksParent = new GameObject("ColaSnacks");
         colaSnacksParent.transform.SetParent(transform);
@@ -106,7 +102,7 @@ public class LevelSpawner : Agent
         EnsureParentObjectsExist();  // Safety check in case called before Awake
         ClearAll();
         SpawnObstacles();
-        SpawnHunters();
+        ResetPlayerPosition();
         SpawnChickens();
         SpawnSnacks();
     }
@@ -121,7 +117,6 @@ public class LevelSpawner : Agent
         EnsureParentObjectsExist();  // Safety check in case called before Awake
         ClearChildren(obstaclesParent);
         ClearChildren(chickensParent);
-        ClearChildren(huntersParent);
         ClearChildren(colaSnacksParent);
         ClearChildren(nuggetSnacksParent);
     }
@@ -219,10 +214,10 @@ public class LevelSpawner : Agent
         {
             Vector3 candidate = GetRandomPosition();
 
-            // Check distance to hunter (only X/Z, ignore Y for 2D distance)
+            // Check distance to player (only X/Z, ignore Y for 2D distance)
             Vector3 candidateXZ = new Vector3(candidate.x, 0, candidate.z);
-            Vector3 hunterXZ = new Vector3(hunterPosition.x, 0, hunterPosition.z);
-            if (Vector3.Distance(candidateXZ, hunterXZ) < hunterMinDistance)
+            Vector3 playerXZ = new Vector3(xrOriginPosition.x, 0, xrOriginPosition.z);
+            if (Vector3.Distance(candidateXZ, playerXZ) < xrOriginMinDistance)
             {
                 continue;  // Try next position
             }
@@ -246,22 +241,19 @@ public class LevelSpawner : Agent
     }
 
     // ============================================================
-    // HUNTER SPAWNING - Spawns the enemy in the center
+    // PLAYER POSITIONING - Teleports VR player to center
     // ============================================================
 
     /// <summary>
-    /// Spawns the hunter (enemy) at the center of the arena.
-    /// Uses the Y position from the prefab's localPosition.
-    /// The chicken agent uses this transform to detect and fear the hunter.
+    /// Teleports the XR Origin to the center of the arena instead of spawning it.
+    /// The chicken agent uses this transform to detect and fear the player.
     /// </summary>
-    private void SpawnHunters()
+    private void ResetPlayerPosition()
     {
-        if (hunterPrefab == null) return;
+        if (xrOrigin == null) return;
 
-        // Get the Y position directly from the prefab's localPosition
-        float prefabY = hunterPrefab.transform.localPosition.y;
-        hunterPosition = new Vector3(0, prefabY, 0);
-        GameObject hunter = Instantiate(hunterPrefab, hunterPosition, Quaternion.identity, huntersParent.transform);
+        xrOrigin.localPosition = new Vector3(0, 0, 0);
+        xrOriginPosition = xrOrigin.position; // Track the world position for distance checks
     }
 
     // ============================================================
@@ -277,13 +269,13 @@ public class LevelSpawner : Agent
     {
         if (chickenPrefab == null) return;
 
-        // Get hunter transform for chicken configuration (must spawn after SpawnHunters)
-        Transform hunterTransform = huntersParent.transform.childCount > 0 ? huntersParent.transform.GetChild(0) : null;
+        // Use XR Origin transform for chicken configuration
+        Transform playerTransform = xrOrigin;
         float prefabY = chickenPrefab.transform.localPosition.y;
 
         for (int i = 0; i < chickenCount; i++)
         {
-            Vector3 pos = GetPositionAvoidingHunter();
+            Vector3 pos = GetPositionAvoidingPlayer();
             pos.y = prefabY;
             GameObject chicken = Instantiate(chickenPrefab, pos, Quaternion.identity, chickensParent.transform);
 
@@ -305,7 +297,7 @@ public class LevelSpawner : Agent
 
                 // Configure the chicken agent
                 agent.snacks = allSnacks;
-                agent.shooter = hunterTransform;  // The chicken will fear this
+                agent.xrOrigin = playerTransform;  // The chicken will fear this
             }
         }
     }
@@ -335,7 +327,7 @@ public class LevelSpawner : Agent
 
         for (int i = 0; i < count; i++)
         {
-            Vector3 pos = GetPositionAvoidingHunter();
+            Vector3 pos = GetPositionAvoidingPlayer();
             pos.y = prefabY;
             Instantiate(prefab, pos, Quaternion.identity, parent.transform);
         }
@@ -357,12 +349,12 @@ public class LevelSpawner : Agent
     }
 
     /// <summary>
-    /// Generates a random position that is at least hunterMinDistance from the hunter.
+    /// Generates a random position that is at least xrOriginMinDistance from the player.
     /// Tries up to 50 times, then falls back to random position.
     /// </summary>
-    private Vector3 GetPositionAvoidingHunter()
+    private Vector3 GetPositionAvoidingPlayer()
     {
-        Vector3 hunterXZ = new Vector3(hunterPosition.x, 0, hunterPosition.z);
+        Vector3 playerXZ = new Vector3(xrOriginPosition.x, 0, xrOriginPosition.z);
         float checkRadius = 1.0f;  // Radius to check for collision
 
         for (int attempt = 0; attempt < 50; attempt++)
@@ -370,7 +362,7 @@ public class LevelSpawner : Agent
             Vector3 candidate = GetRandomPosition();
             Vector3 candidateXZ = new Vector3(candidate.x, 0, candidate.z);
 
-            if (Vector3.Distance(candidateXZ, hunterXZ) >= hunterMinDistance)
+            if (Vector3.Distance(candidateXZ, playerXZ) >= xrOriginMinDistance)
             {
                 // Check if position is free of obstacles
                 if (obstaclesLayer.value != 0 && 
@@ -386,7 +378,7 @@ public class LevelSpawner : Agent
             }
         }
 
-        // Fallback: return random position even if too close to hunter
+        // Fallback: return random position even if too close to player
         return GetRandomPosition();
     }
 

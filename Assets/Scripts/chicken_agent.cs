@@ -16,12 +16,12 @@ using Unity.MLAgents.Sensors;
 public class chicken_agent : Agent
 {
     [Header("Doelwit & Beweging")]
-    public Transform shooter;
+    public Transform xrOrigin;
     public float moveSpeed = 5f;
 
     [Header("Radar Instellingen")]
     public float detectieRadius = 10f;
-    public LayerMask hunterLayer;
+    public LayerMask xrOriginLayer;
     public LayerMask obstaclesLayer;
 
     [Header("Honger & Snacks (Kannibalisme?!)")]
@@ -58,8 +58,8 @@ public class chicken_agent : Agent
     public override void CollectObservations(VectorSensor sensor)
     {
         sensor.AddObservation(transform.localPosition);
-        sensor.AddObservation(shooter.localPosition);
-        sensor.AddObservation(KanSchutterZien() ? 1f : 0f);
+        sensor.AddObservation(xrOrigin.localPosition);
+        sensor.AddObservation(KanXROriginZien() ? 1f : 0f);
 
         // De kip moet weten hoe hongerig hij is. 
         // Genormaliseerd (tussen 0 en 1) is beter voor het neurale netwerk!
@@ -103,9 +103,9 @@ public class chicken_agent : Agent
             return; // Stop verdere berekeningen in deze stap
         }
 
-        bool zietHunter = KanSchutterZien();
+        bool zietXROrigin = KanXROriginZien();
 
-        if (zietHunter)
+        if (zietXROrigin)
         {
             AddReward(-0.01f);
         }
@@ -127,13 +127,13 @@ public class chicken_agent : Agent
         continuousActions[1] = v;
     }
 
-    private bool KanSchutterZien()
+    private bool KanXROriginZien()
     {
-        Collider[] hunters = Physics.OverlapSphere(transform.position, detectieRadius, hunterLayer);
+        Collider[] xrOrigins = Physics.OverlapSphere(transform.position, detectieRadius, xrOriginLayer);
 
-        foreach (Collider hunter in hunters)
+        foreach (Collider origin in xrOrigins)
         {
-            if (HasLineOfSight(hunter.transform))
+            if (HasLineOfSight(origin.transform))
             {
                 return true;
             }
@@ -213,12 +213,12 @@ public class chicken_agent : Agent
         style.normal.textColor = Color.white;
 
         float hungerPct = maxHonger > 0 ? huidigeHonger / maxHonger : 0;
-        float distance = shooter != null ? Vector3.Distance(transform.position, shooter.position) : 0;
-        bool zietSchutter = Application.isPlaying && shooter != null ? KanSchutterZien() : false;
+        float distance = xrOrigin != null ? Vector3.Distance(transform.position, xrOrigin.position) : 0;
+        bool zietSpeler = Application.isPlaying && xrOrigin != null ? KanXROriginZien() : false;
 
         GUI.Label(new Rect(20, 20, 300, 30), $"Honger: {huidigeHonger:F1} / {maxHonger} ({hungerPct * 100:F1}%)", style);
-        GUI.Label(new Rect(20, 50, 300, 30), $"Afstand tot shooter: {distance:F2}m", style);
-        GUI.Label(new Rect(20, 80, 300, 30), $"Ziet shooter: {(zietSchutter ? "JA" : "Nee")}", style);
+        GUI.Label(new Rect(20, 50, 300, 30), $"Afstand tot speler: {distance:F2}m", style);
+        GUI.Label(new Rect(20, 80, 300, 30), $"Ziet speler: {(zietSpeler ? "JA" : "Nee")}", style);
         GUI.Label(new Rect(20, 110, 300, 30), $"Reward: {GetCumulativeReward():F2}", style);
 
         if (hungerPct < 0.3f)
