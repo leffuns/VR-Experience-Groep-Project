@@ -34,6 +34,7 @@ public class chicken_agent : Agent
 
     private float huidigeHonger;
     private Rigidbody rb;
+    private Vector3 targetDirection;
 
     public override void Initialize()
     {
@@ -86,11 +87,9 @@ public class chicken_agent : Agent
 
         Debug.Log($"[OnActionReceived] Final Actions - X: {moveX}, Z: {moveZ}");
 
-        Vector3 move = new Vector3(moveX, 0, moveZ).normalized;
+        targetDirection = new Vector3(moveX, 0, moveZ).normalized;
 
-        Debug.Log($"[Movement] Move direction: {move}, Speed: {move * moveSpeed}");
-
-        rb.linearVelocity = new Vector3(move.x * moveSpeed, rb.linearVelocity.y, move.z * moveSpeed);
+        Debug.Log($"[Movement] Move direction: {targetDirection}, Speed: {targetDirection * moveSpeed}");
 
         // Honger systeem verwerken
         huidigeHonger -= hongerAfnamePerStap;
@@ -127,6 +126,15 @@ public class chicken_agent : Agent
         continuousActions[1] = v;
     }
 
+    private void FixedUpdate()
+    {
+        if (targetDirection != Vector3.zero)
+        {
+            Vector3 targetPosition = rb.position + targetDirection * moveSpeed * Time.fixedDeltaTime;
+            rb.MovePosition(targetPosition);
+        }
+    }
+
     private bool KanXROriginZien()
     {
         Collider[] xrOrigins = Physics.OverlapSphere(transform.position, detectieRadius, xrOriginLayer);
@@ -149,7 +157,7 @@ public class chicken_agent : Agent
 
         RaycastHit hit;
 
-        if (Physics.Raycast(startPositie, direction.normalized, out hit, detectieRadius, ~obstaclesLayer))
+        if (Physics.Raycast(startPositie, direction.normalized, out hit, detectieRadius))
         {
             if (hit.transform == target)
             {
