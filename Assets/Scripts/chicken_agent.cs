@@ -204,4 +204,28 @@ public class chicken_agent : Agent
             Gizmos.DrawWireSphere(transform.position, 0.3f);
         }
     }
+
+    private void OnGUI()
+    {
+        GUIStyle style = new GUIStyle(GUI.skin.label);
+        style.fontSize = 18;
+        style.fontStyle = FontStyle.Bold;
+        style.normal.textColor = Color.white;
+
+        float hungerPct = maxHonger > 0 ? huidigeHonger / maxHonger : 0;
+        float distance = shooter != null ? Vector3.Distance(transform.position, shooter.position) : 0;
+        bool zietSchutter = Application.isPlaying && shooter != null ? KanSchutterZien() : false;
+
+        GUI.Label(new Rect(20, 20, 300, 30), $"Honger: {huidigeHonger:F1} / {maxHonger} ({hungerPct * 100:F1}%)", style);
+        GUI.Label(new Rect(20, 50, 300, 30), $"Afstand tot shooter: {distance:F2}m", style);
+        GUI.Label(new Rect(20, 80, 300, 30), $"Ziet shooter: {(zietSchutter ? "JA" : "Nee")}", style);
+        GUI.Label(new Rect(20, 110, 300, 30), $"Reward: {GetCumulativeReward():F2}", style);
+
+        if (hungerPct < 0.3f)
+        {
+            GUIStyle warningStyle = new GUIStyle(style);
+            warningStyle.normal.textColor = Color.red;
+            GUI.Label(new Rect(20, 140, 300, 30), "⚠ HONGERING!", warningStyle);
+        }
+    }
 }
