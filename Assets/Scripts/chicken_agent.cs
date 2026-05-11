@@ -18,7 +18,7 @@ public class chicken_agent : Agent
     [Header("Doelwit & Beweging")]
     public Transform shooter;
     public float moveSpeed = 5f;
-    
+
     [Header("Radar Instellingen")]
     public float detectieRadius = 10f;
     public LayerMask hunterLayer;
@@ -30,20 +30,21 @@ public class chicken_agent : Agent
     public float hongerAfnamePerStap = 0.1f;
     public float hongerHerstelPerSnack = 40f;
     [Tooltip("Sleep je cola en nuggets hierin zodat het script ze kan resetten.")]
-    public GameObject[] snacks; 
-    
+    public GameObject[] snacks;
+
     private float huidigeHonger;
     private Rigidbody rb;
 
-public override void Initialize()
+    public override void Initialize()
     {
         rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     }
 
     public override void OnEpisodeBegin()
     {
         rb.linearVelocity = Vector3.zero;
-        
+
         // Vul de maag weer bij de start
         huidigeHonger = maxHonger;
 
@@ -59,7 +60,7 @@ public override void Initialize()
         sensor.AddObservation(transform.localPosition);
         sensor.AddObservation(shooter.localPosition);
         sensor.AddObservation(KanSchutterZien() ? 1f : 0f);
-        
+
         // De kip moet weten hoe hongerig hij is. 
         // Genormaliseerd (tussen 0 en 1) is beter voor het neurale netwerk!
         sensor.AddObservation(huidigeHonger / maxHonger);
@@ -68,13 +69,13 @@ public override void Initialize()
     public override void OnActionReceived(ActionBuffers actions)
     {
         Debug.Log("[OnActionReceived] Called!");
-        
+
         // Direct input as primary source
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
-        
+
         Debug.Log($"[Input] Direct - X: {moveX}, Z: {moveZ}");
-        
+
         // Fallback to ML-Agent actions if no input
         if (moveX == 0 && moveZ == 0)
         {
@@ -86,14 +87,14 @@ public override void Initialize()
         Debug.Log($"[OnActionReceived] Final Actions - X: {moveX}, Z: {moveZ}");
 
         Vector3 move = new Vector3(moveX, 0, moveZ).normalized;
-        
-        Debug.Log($"[Movement] Move direction: {move}, Force: {move * moveSpeed}");
-        
-        rb.AddForce(move * moveSpeed);
+
+        Debug.Log($"[Movement] Move direction: {move}, Speed: {move * moveSpeed}");
+
+        rb.linearVelocity = new Vector3(move.x * moveSpeed, rb.linearVelocity.y, move.z * moveSpeed);
 
         // Honger systeem verwerken
         huidigeHonger -= hongerAfnamePerStap;
-        
+
         if (huidigeHonger <= 0)
         {
             // Uitgehongerd = dood. Flinke straf, net als bij een kogel!
@@ -103,7 +104,7 @@ public override void Initialize()
         }
 
         bool zietHunter = KanSchutterZien();
-        
+
         if (zietHunter)
         {
             AddReward(-0.01f);
@@ -119,9 +120,9 @@ public override void Initialize()
         ActionSegment<float> continuousActions = actionsOut.ContinuousActions;
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
-        
+
         Debug.Log($"[Heuristic] Input - Horizontal: {h}, Vertical: {v}");
-        
+
         continuousActions[0] = h;
         continuousActions[1] = v;
     }
@@ -129,7 +130,7 @@ public override void Initialize()
     private bool KanSchutterZien()
     {
         Collider[] hunters = Physics.OverlapSphere(transform.position, detectieRadius, hunterLayer);
-        
+
         foreach (Collider hunter in hunters)
         {
             if (HasLineOfSight(hunter.transform))
@@ -147,7 +148,7 @@ public override void Initialize()
         Vector3 direction = targetPositie - startPositie;
 
         RaycastHit hit;
-        
+
         if (Physics.Raycast(startPositie, direction.normalized, out hit, detectieRadius, ~obstaclesLayer))
         {
             if (hit.transform == target)
@@ -173,7 +174,7 @@ public override void Initialize()
         if (other.CompareTag("Snack"))
         {
             // Alleen eten als huidigeHonger lager is dan de maximale honger
-            if (huidigeHonger < maxHonger-5)
+            if (huidigeHonger < maxHonger - 5)
             {
                 // Eet het op (verdwijnt uit de scene)
                 other.gameObject.SetActive(false);
@@ -196,7 +197,7 @@ public override void Initialize()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectieRadius);
-        
+
         if (Application.isPlaying && rb != null)
         {
             Gizmos.color = Color.green;

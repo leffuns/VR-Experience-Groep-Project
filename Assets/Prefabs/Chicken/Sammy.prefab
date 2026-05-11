@@ -158,7 +158,7 @@ MonoBehaviour:
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
   shooter: {fileID: 0}
-  moveSpeed: 50
+  moveSpeed: 5
   detectieRadius: 10
   hunterLayer:
     serializedVersion: 2
