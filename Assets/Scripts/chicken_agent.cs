@@ -128,10 +128,16 @@ public class chicken_agent : Agent
 
     private void FixedUpdate()
     {
+        // We gebruiken rb.linearVelocity in plaats van rb.MovePosition.
+        // MovePosition negeert namelijk de zwaartekracht (Y-as), waardoor de kip gaat zweven!
         if (targetDirection != Vector3.zero)
         {
-            Vector3 targetPosition = rb.position + targetDirection * moveSpeed * Time.fixedDeltaTime;
-            rb.MovePosition(targetPosition);
+            Vector3 velocity = targetDirection * moveSpeed;
+            rb.linearVelocity = new Vector3(velocity.x, rb.linearVelocity.y, velocity.z);
+        }
+        else
+        {
+            rb.linearVelocity = new Vector3(0, rb.linearVelocity.y, 0);
         }
     }
 
@@ -159,7 +165,8 @@ public class chicken_agent : Agent
 
         if (Physics.Raycast(startPositie, direction.normalized, out hit, detectieRadius))
         {
-            if (hit.transform == target)
+            // Kijk of de raycast het doelwit raakt, OF een child (zoals de camera) van het doelwit
+            if (hit.transform == target || hit.transform.IsChildOf(target))
             {
                 return true;
             }

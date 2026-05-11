@@ -161,7 +161,7 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
+  m_BehaviorType: 1
   m_BehaviorName: Sammy
   TeamId: 0
   m_UseChildSensors: 1
@@ -185,7 +185,7 @@ MonoBehaviour:
   MaxStep: 0
   xrOrigin: {fileID: 0}
   moveSpeed: 5
-  detectieRadius: 10
+  detectieRadius: 100
   xrOriginLayer:
     serializedVersion: 2
     m_Bits: 8
