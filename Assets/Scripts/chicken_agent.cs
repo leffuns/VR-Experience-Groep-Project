@@ -18,9 +18,10 @@ public class chicken_agent : Agent
     [Header("Doelwit & Beweging")]
     public Transform shooter;
     public float moveSpeed = 5f;
-    
-    [Header("Raycast Instellingen")]
-    public float zichtReikwijdte = 25f;
+
+    [Header("Radar Instellingen")]
+    public float detectieRadius = 10f;
+    public LayerMask hunterLayer;
     public LayerMask obstaclesLayer;
 
     [Header("Honger & Snacks (Kannibalisme?!)")]
@@ -29,20 +30,21 @@ public class chicken_agent : Agent
     public float hongerAfnamePerStap = 0.1f;
     public float hongerHerstelPerSnack = 40f;
     [Tooltip("Sleep je cola en nuggets hierin zodat het script ze kan resetten.")]
-    public GameObject[] snacks; 
-    
+    public GameObject[] snacks;
+
     private float huidigeHonger;
     private Rigidbody rb;
 
     public override void Initialize()
     {
         rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
     }
 
     public override void OnEpisodeBegin()
     {
         rb.linearVelocity = Vector3.zero;
-        
+
         // Vul de maag weer bij de start
         huidigeHonger = maxHonger;
 
@@ -58,7 +60,7 @@ public class chicken_agent : Agent
         sensor.AddObservation(transform.localPosition);
         sensor.AddObservation(shooter.localPosition);
         sensor.AddObservation(KanSchutterZien() ? 1f : 0f);
-        
+
         // De kip moet weten hoe hongerig hij is. 
         // Genormaliseerd (tussen 0 en 1) is beter voor het neurale netwerk!
         sensor.AddObservation(huidigeHonger / maxHonger);
@@ -66,15 +68,33 @@ public class chicken_agent : Agent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
-        float moveX = actions.ContinuousActions[0];
-        float moveZ = actions.ContinuousActions[1];
+        Debug.Log("[OnActionReceived] Called!");
+
+        // Direct input as primary source
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveZ = Input.GetAxisRaw("Vertical");
+
+        Debug.Log($"[Input] Direct - X: {moveX}, Z: {moveZ}");
+
+        // Fallback to ML-Agent actions if no input
+        if (moveX == 0 && moveZ == 0)
+        {
+            moveX = actions.ContinuousActions[0];
+            moveZ = actions.ContinuousActions[1];
+            Debug.Log($"[Actions] ML-Agent fallback - X: {moveX}, Z: {moveZ}");
+        }
+
+        Debug.Log($"[OnActionReceived] Final Actions - X: {moveX}, Z: {moveZ}");
 
         Vector3 move = new Vector3(moveX, 0, moveZ).normalized;
-        rb.AddForce(move * moveSpeed);
+
+        Debug.Log($"[Movement] Move direction: {move}, Speed: {move * moveSpeed}");
+
+        rb.linearVelocity = new Vector3(move.x * moveSpeed, rb.linearVelocity.y, move.z * moveSpeed);
 
         // Honger systeem verwerken
         huidigeHonger -= hongerAfnamePerStap;
-        
+
         if (huidigeHonger <= 0)
         {
             // Uitgehongerd = dood. Flinke straf, net als bij een kogel!
@@ -83,35 +103,55 @@ public class chicken_agent : Agent
             return; // Stop verdere berekeningen in deze stap
         }
 
-        if (KanSchutterZien())
+        bool zietHunter = KanSchutterZien();
+
+        if (zietHunter)
         {
-            AddReward(-0.01f); 
+            AddReward(-0.01f);
         }
         else
         {
-            AddReward(0.01f); 
+            AddReward(0.01f);
         }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
     {
         ActionSegment<float> continuousActions = actionsOut.ContinuousActions;
-        continuousActions[0] = Input.GetAxisRaw("Horizontal");
-        continuousActions[1] = Input.GetAxisRaw("Vertical");
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+
+        Debug.Log($"[Heuristic] Input - Horizontal: {h}, Vertical: {v}");
+
+        continuousActions[0] = h;
+        continuousActions[1] = v;
     }
 
     private bool KanSchutterZien()
     {
-        if (shooter == null) return false;
+        Collider[] hunters = Physics.OverlapSphere(transform.position, detectieRadius, hunterLayer);
 
+        foreach (Collider hunter in hunters)
+        {
+            if (HasLineOfSight(hunter.transform))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool HasLineOfSight(Transform target)
+    {
         Vector3 startPositie = transform.position + Vector3.up * 0.5f;
-        Vector3 richting = (shooter.position + Vector3.up * 0.5f) - startPositie;
+        Vector3 targetPositie = target.position + Vector3.up * 0.5f;
+        Vector3 direction = targetPositie - startPositie;
 
         RaycastHit hit;
-        
-        if (Physics.Raycast(startPositie, richting.normalized, out hit, zichtReikwijdte, ~obstaclesLayer))
+
+        if (Physics.Raycast(startPositie, direction.normalized, out hit, detectieRadius, ~obstaclesLayer))
         {
-            if (hit.transform == shooter)
+            if (hit.transform == target)
             {
                 return true;
             }
@@ -134,7 +174,7 @@ public class chicken_agent : Agent
         if (other.CompareTag("Snack"))
         {
             // Alleen eten als huidigeHonger lager is dan de maximale honger
-            if (huidigeHonger < maxHonger-5)
+            if (huidigeHonger < maxHonger - 5)
             {
                 // Eet het op (verdwijnt uit de scene)
                 other.gameObject.SetActive(false);
@@ -148,8 +188,20 @@ public class chicken_agent : Agent
             else
             {
                 // Optioneel: Geef een kleine straf of doe niets als de kip vol zit
-                // AddReward(-0.01f); 
+                // AddReward(-0.01f);
             }
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, detectieRadius);
+
+        if (Application.isPlaying && rb != null)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(transform.position, 0.3f);
         }
     }
 }
