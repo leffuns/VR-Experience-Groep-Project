@@ -29,7 +29,7 @@ public class chicken_agent : Agent
     public AudioClip[] deathSounds;
 
     [Header("Honger & Snacks (Kannibalisme?!)")]
-    public float maxHonger = 100f;
+    public float maxHonger = 500f;
     [Tooltip("Hoeveel honger er per stap (OnActionReceived) afgaat.")]
     public float hongerAfnamePerStap = 0.1f;
     public float hongerHerstelPerSnack = 40f;
