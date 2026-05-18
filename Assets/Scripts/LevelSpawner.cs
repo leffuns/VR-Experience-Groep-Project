@@ -359,6 +359,8 @@ public class LevelSpawner : MonoBehaviour
         // Update all chickens (positions and references)
         foreach (Transform child in chickensParent.transform)
         {
+            child.gameObject.SetActive(true); // Reactiveer de kip!
+
             Vector3 pos = GetPositionAvoidingPlayer();
             pos.y = prefabY;
             child.position = pos;
@@ -486,5 +488,26 @@ public class LevelSpawner : MonoBehaviour
         ResetPlayerPosition();
         SpawnSnacks();
         RespawnOrUpdateChickens();
+    }
+
+    /// <summary>
+    /// Checks if all chickens are inactive (dead). If so, triggers a level reset.
+    /// </summary>
+    public void CheckAllChickensDeadAndReset()
+    {
+        bool anyChickenActive = false;
+        foreach (Transform child in chickensParent.transform)
+        {
+            if (child.gameObject.activeSelf)
+            {
+                anyChickenActive = true;
+                break;
+            }
+        }
+
+        if (!anyChickenActive)
+        {
+            ResetLevel();
+        }
     }
 }
