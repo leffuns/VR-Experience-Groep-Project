@@ -127,3 +127,8 @@ UserSettings/
 
 # ML-Agents Timers
 /Assets/ML-Agents/Timers/
+
+# training
+
+*.pt
+*.onnx
