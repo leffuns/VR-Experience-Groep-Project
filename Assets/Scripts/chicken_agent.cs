@@ -2,15 +2,15 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
-
+using System.Collections.Generic; // Toegevoegd voor handige sorteerfuncties
 
 /*
-    1.	Space Size Aanpassen: We hebben zojuist de hongerwaarde toegevoegd aan CollectObservations. Je moet nu de Space Size in je Behavior Parameters component op de kip veranderen van 7 naar 8. Doe je dit niet, dan crasht ML-Agents meteen.
-	2.	Snacks Instellen: Selecteer al je cola-blikjes en kippennuggets in de scene. Verander hun Tag naar Snack (maak deze tag aan als hij nog niet bestaat, met een hoofdletter S!).
-	3.	Triggers Maken: Zorg dat de Colliders op je snacks staan aangevinkt als Is Trigger. Als je dit vergeet, botst de kip ertegenaan alsof het stenen zijn.
-	4.	De Array Vullen: Sleep al je snacks vanuit je scene naar de Snacks array op het script van de kip in de Inspector. Zo weet de kip welke objecten hij bij het begin van elke ronde opnieuw zichtbaar moet maken.
+    1.  Space Size Aanpassen: We hebben zojuist observaties voor de 3 dichtstbijzijnde snacks toegevoegd.
+        Je moet nu de Space Size in je Behavior Parameters component op de kip veranderen van 8 naar 17!
+    2.  Snacks Instellen: Selecteer al je cola-blikjes en kippennuggets in de scene. Verander hun Tag naar Snack.
+    3.  Triggers Maken: Zorg dat de Colliders op je snacks staan aangevinkt als Is Trigger.
+    4.  De Array Vullen: Sleep al je snacks vanuit je scene naar de Snacks array op het script van de kip.
 */
-
 
 [RequireComponent(typeof(Rigidbody))]
 public class chicken_agent : Agent
@@ -49,7 +49,16 @@ public class chicken_agent : Agent
         // Vul de maag weer bij de start
         huidigeHonger = maxHonger;
 
-        // Reset alle snacks zodat ze weer in de scene staan voor de nieuwe episode
+        // VIND ALLE SNACKS AAN HET BEGIN VAN ELKE EPISODE
+        snacks = GameObject.FindGameObjectsWithTag("Snack");
+
+        // Controleer of er wel snacks zijn, om fouten te voorkomen
+        if (snacks.Length == 0)
+        {
+            Debug.LogWarning($"[{gameObject.name}] Waarschuwing: Geen objecten met tag 'Snack' gevonden bij de start van deze episode!");
+        }
+
+        // Reset alle gevonden snacks zodat ze weer actief/zichtbaar zijn
         foreach (GameObject snack in snacks)
         {
             if (snack != null) snack.SetActive(true);
@@ -62,9 +71,42 @@ public class chicken_agent : Agent
         sensor.AddObservation(xrOrigin.localPosition);
         sensor.AddObservation(KanXROriginZien() ? 1f : 0f);
 
-        // De kip moet weten hoe hongerig hij is. 
-        // Genormaliseerd (tussen 0 en 1) is beter voor het neurale netwerk!
+        // De kip moet weten hoe hongerig hij is. (Genormaliseerd)
         sensor.AddObservation(huidigeHonger / maxHonger);
+
+        // --- NIEUW: OBSERVEER DE 3 DICHTSBIJZINDSTE SNACKS ---
+        List<GameObject> actieveSnacks = new List<GameObject>();
+
+        // Filter alle snacks die momenteel actief (nog niet opgegeten) zijn
+        foreach (GameObject snack in snacks)
+        {
+            if (snack != null && snack.activeSelf)
+            {
+                actieveSnacks.Add(snack);
+            }
+        }
+
+        // Sorteer de snacks op afstand (dichtstbijzijnde eerst)
+        actieveSnacks.Sort((a, b) =>
+            Vector3.Distance(transform.position, a.transform.position).CompareTo(
+            Vector3.Distance(transform.position, b.transform.position))
+        );
+
+        // Geef de relatieve positie van de top 3 snacks door aan het brein
+        for (int i = 0; i < 3; i++)
+        {
+            if (i < actieveSnacks.Count)
+            {
+                // Relatieve positie (waar is de snack ten opzichte van de kip)
+                Vector3 relatievePos = actieveSnacks[i].transform.position - transform.position;
+                sensor.AddObservation(relatievePos);
+            }
+            else
+            {
+                // Als er minder dan 3 snacks over zijn, vul de rest op met nullen (padding)
+                sensor.AddObservation(Vector3.zero);
+            }
+        }
     }
 
     public override void OnActionReceived(ActionBuffers actions)
@@ -128,8 +170,6 @@ public class chicken_agent : Agent
 
     private void FixedUpdate()
     {
-        // We gebruiken rb.linearVelocity in plaats van rb.MovePosition.
-        // MovePosition negeert namelijk de zwaartekracht (Y-as), waardoor de kip gaat zweven!
         if (targetDirection != Vector3.zero)
         {
             Vector3 velocity = targetDirection * moveSpeed;
@@ -165,7 +205,6 @@ public class chicken_agent : Agent
 
         if (Physics.Raycast(startPositie, direction.normalized, out hit, detectieRadius))
         {
-            // Kijk of de raycast het doelwit raakt, OF een child (zoals de camera) van het doelwit
             if (hit.transform == target || hit.transform.IsChildOf(target))
             {
                 return true;
@@ -185,13 +224,9 @@ public class chicken_agent : Agent
 
     private void TriggerLevelReset()
     {
-        // Reset deze kip z'n beloningen/metrics
         EndEpisode();
-
-        // Deactiveer de kip zodat deze niet meer beweegt of updates krijgt
         gameObject.SetActive(false);
 
-        // Zoek de spawner en laat die controleren of alle kippen dood zijn
         LevelSpawner spawner = GetComponentInParent<LevelSpawner>();
         if (spawner != null)
         {
@@ -201,25 +236,15 @@ public class chicken_agent : Agent
 
     private void OnTriggerEnter(Collider other)
     {
-        // Controleer of de kip een snack aanraakt
         if (other.CompareTag("Snack"))
         {
-            // Alleen eten als huidigeHonger lager is dan de maximale honger
             if (huidigeHonger < maxHonger - 5)
             {
-                // Eet het op (verdwijnt uit de scene)
                 other.gameObject.SetActive(false);
-
-                // Herstel honger, maar ga niet over de maximale limiet heen
                 huidigeHonger = Mathf.Min(huidigeHonger + hongerHerstelPerSnack, maxHonger);
 
                 // Geef een flinke beloning voor het zoeken van voedsel!
                 AddReward(0.5f);
-            }
-            else
-            {
-                // Optioneel: Geef een kleine straf of doe niets als de kip vol zit
-                // AddReward(-0.01f);
             }
         }
     }
