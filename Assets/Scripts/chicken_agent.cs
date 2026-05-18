@@ -32,14 +32,21 @@ public class chicken_agent : Agent
     [Tooltip("Sleep je cola en nuggets hierin zodat het script ze kan resetten.")]
     public GameObject[] snacks;
 
+    [HideInInspector]
+    public bool isDead = false;
+
     private float huidigeHonger;
     private Rigidbody rb;
     private Vector3 targetDirection;
+    private Collider col;
+    private Renderer[] renderers;
 
     public override void Initialize()
     {
         rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        col = GetComponent<Collider>();
+        renderers = GetComponentsInChildren<Renderer>();
     }
 
     public override void OnEpisodeBegin()
@@ -67,6 +74,15 @@ public class chicken_agent : Agent
 
     public override void CollectObservations(VectorSensor sensor)
     {
+        if (isDead)
+        {
+            sensor.AddObservation(Vector3.zero); // 3
+            sensor.AddObservation(Vector3.zero); // 3
+            sensor.AddObservation(0f);           // 1
+            sensor.AddObservation(0f);           // 1
+            return;
+        }
+
         sensor.AddObservation(transform.localPosition);
         sensor.AddObservation(xrOrigin.localPosition);
         sensor.AddObservation(KanXROriginZien() ? 1f : 0f);
@@ -111,6 +127,16 @@ public class chicken_agent : Agent
 
     public override void OnActionReceived(ActionBuffers actions)
     {
+        if (isDead) return;
+
+        // Controleer of de kip van de rand is gevlogen/gevallen
+        if (transform.position.y < -1.0f)
+        {
+            AddReward(-10.0f); // Flinke straf voor vallen!
+            TriggerLevelReset();
+            return;
+        }
+
         Debug.Log("[OnActionReceived] Called!");
 
         // Direct input as primary source
@@ -139,7 +165,7 @@ public class chicken_agent : Agent
         if (huidigeHonger <= 0)
         {
             // Uitgehongerd = dood. Flinke straf, net als bij een kogel!
-            AddReward(-1.0f);
+            AddReward(-10.0f);
             TriggerLevelReset();
             return; // Stop verdere berekeningen in deze stap
         }
@@ -148,10 +174,15 @@ public class chicken_agent : Agent
 
         if (zietXROrigin)
         {
-            AddReward(-0.01f);
+            // Dynamische angst: de straf voor gezien worden neemt af naarmate de kip hongeriger wordt.
+            // Als de kip bijna uithongert (huidigeHonger is laag), is de angstfactor bijna 0,
+            // waardoor hij de schuilplaats durft te verlaten om snacks te zoeken.
+            float angstFactor = huidigeHonger / maxHonger;
+            AddReward(-0.01f * angstFactor);
         }
         else
         {
+            // Beloning voor veilig schuilen
             AddReward(0.01f);
         }
     }
@@ -217,21 +248,54 @@ public class chicken_agent : Agent
     {
         if (collision.gameObject.CompareTag("Bullet"))
         {
-            AddReward(-1.0f);
+            AddReward(-10.0f);
             TriggerLevelReset();
         }
     }
 
     private void TriggerLevelReset()
     {
-        EndEpisode();
-        gameObject.SetActive(false);
+        isDead = true;
+
+        // Verberg de kip en zet colliders/physics uit zodat de verbinding met Python open blijft
+        if (col != null) col.enabled = false;
+        foreach (Renderer r in renderers)
+        {
+            if (r != null) r.enabled = false;
+        }
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.linearVelocity = Vector3.zero;
+        }
 
         LevelSpawner spawner = GetComponentInParent<LevelSpawner>();
         if (spawner != null)
         {
             spawner.CheckAllChickensDeadAndReset();
         }
+    }
+
+    public void Revive(Vector3 spawnPosition)
+    {
+        isDead = false;
+
+        // Schakel visuals en colliders weer in
+        if (col != null) col.enabled = true;
+        foreach (Renderer r in renderers)
+        {
+            if (r != null) r.enabled = true;
+        }
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.linearVelocity = Vector3.zero;
+        }
+
+        transform.position = spawnPosition;
+
+        // Reset de episode voor ML-Agents
+        EndEpisode();
     }
 
     private void OnTriggerEnter(Collider other)

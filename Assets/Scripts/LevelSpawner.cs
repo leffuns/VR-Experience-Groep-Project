@@ -359,18 +359,19 @@ public class LevelSpawner : MonoBehaviour
         // Update all chickens (positions and references)
         foreach (Transform child in chickensParent.transform)
         {
-            child.gameObject.SetActive(true); // Reactiveer de kip!
-
             Vector3 pos = GetPositionAvoidingPlayer();
             pos.y = prefabY;
-            child.position = pos;
 
             chicken_agent agent = child.GetComponent<chicken_agent>();
             if (agent != null)
             {
                 agent.snacks = allSnacks;
                 agent.xrOrigin = playerTransform;
-                
+                agent.Revive(pos);
+            }
+            else
+            {
+                child.position = pos;
                 Rigidbody rb = child.GetComponent<Rigidbody>();
                 if (rb != null) rb.linearVelocity = Vector3.zero;
             }
@@ -498,7 +499,8 @@ public class LevelSpawner : MonoBehaviour
         bool anyChickenActive = false;
         foreach (Transform child in chickensParent.transform)
         {
-            if (child.gameObject.activeSelf)
+            chicken_agent agent = child.GetComponent<chicken_agent>();
+            if (agent != null && !agent.isDead)
             {
                 anyChickenActive = true;
                 break;
