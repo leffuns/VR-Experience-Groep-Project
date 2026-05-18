@@ -2,22 +2,22 @@
     "Sammy": {
         "checkpoints": [
             {
-                "steps": 147292,
-                "file_path": "results/XR_Test_01/Sammy/Sammy-147292.onnx",
-                "reward": -5.8100004434585575,
-                "creation_time": 1779091305.400339,
+                "steps": 23028,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-23028.onnx",
+                "reward": -7.772086587819186,
+                "creation_time": 1779094881.593781,
                 "auxillary_file_paths": [
-                    "results/XR_Test_01/Sammy/Sammy-147292.pt"
+                    "results/XR_Test_01/Sammy/Sammy-23028.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 147292,
+            "steps": 23028,
             "file_path": "results/XR_Test_01/Sammy.onnx",
-            "reward": -5.8100004434585575,
-            "creation_time": 1779091305.400339,
+            "reward": -7.772086587819186,
+            "creation_time": 1779094881.593781,
             "auxillary_file_paths": [
-                "results/XR_Test_01/Sammy/Sammy-147292.pt"
+                "results/XR_Test_01/Sammy/Sammy-23028.pt"
             ]
         }
     },
