@@ -192,10 +192,13 @@ MonoBehaviour:
   obstaclesLayer:
     serializedVersion: 2
     m_Bits: 4294967232
+  deathSounds: []
+  featherExplosionPrefab: {fileID: 3525805272322984561, guid: f39f44dfb0e654c4c88fdc2147a59186, type: 3}
   maxHonger: 100
   hongerAfnamePerStap: 0.1
   hongerHerstelPerSnack: 40
   snacks: []
+  isDead: 0
 --- !u!114 &3547814680030318301
 MonoBehaviour:
   m_ObjectHideFlags: 0
