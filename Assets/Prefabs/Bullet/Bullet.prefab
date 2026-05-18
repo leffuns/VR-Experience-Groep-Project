@@ -108,6 +108,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VRBullet
   selfDestructTime: 5
+  sparkPrefab: {fileID: 9027409781270099200, guid: f3f9dd3d0adf0ce4bbeff83cb312b570, type: 3}
 --- !u!96 &-1058277039671359184
 TrailRenderer:
   serializedVersion: 4
