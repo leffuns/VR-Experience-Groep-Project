@@ -1,6 +1,7 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // Added this to read VR controllers directly
+using UnityEngine.InputSystem; 
 
+[RequireComponent(typeof(AudioSource))] // This ensures the gun always has a speaker
 public class VRGun : MonoBehaviour
 {
     [Header("Settings")]
@@ -8,13 +9,21 @@ public class VRGun : MonoBehaviour
     public Transform spawnPoint;
     public float bulletVelocity = 30.0f;
 
+    [Header("Audio")]
+    public AudioClip pewSound;       // Drag your sound file here
+    private AudioSource audioSource; // The speaker on the gun
+
     [Header("VR Input")]
-    [Tooltip("Click the little circle to assign the Right Trigger action")]
     public InputActionReference triggerInput; 
+
+    private void Awake()
+    {
+        // Automatically find the AudioSource component on the gun
+        audioSource = GetComponent<AudioSource>();
+    }
 
     private void OnEnable()
     {
-        // Start listening for the trigger pull when the gun is active
         if (triggerInput != null)
         {
             triggerInput.action.Enable();
@@ -24,14 +33,12 @@ public class VRGun : MonoBehaviour
 
     private void OnDisable()
     {
-        // Stop listening to prevent memory leaks
         if (triggerInput != null)
         {
             triggerInput.action.performed -= ContextShoot;
         }
     }
 
-    // This converts the Input System event into your standard Shoot() function
     private void ContextShoot(InputAction.CallbackContext context)
     {
         Shoot();
@@ -43,6 +50,12 @@ public class VRGun : MonoBehaviour
         {
             Debug.LogError("VRGun: Missing Prefab or SpawnPoint!");
             return;
+        }
+
+        // --- PEW SOUND EFFECT door Ninky ---
+        if (pewSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(pewSound); 
         }
 
         GameObject projectile = Instantiate(bulletPrefab, spawnPoint.position, spawnPoint.rotation);
