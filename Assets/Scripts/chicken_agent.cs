@@ -28,6 +28,10 @@ public class chicken_agent : Agent
     [Tooltip("Drag your different chicken death sounds here")]
     public AudioClip[] deathSounds;
 
+    [Header("Visual Effects")]
+    [Tooltip("Sleep je veren-explosie prefab hierin")]
+    public GameObject featherExplosionPrefab;
+
     [Header("Honger & Snacks (Kannibalisme?!)")]
     public float maxHonger = 500f;
     [Tooltip("Hoeveel honger er per stap (OnActionReceived) afgaat.")]
@@ -137,6 +141,7 @@ public class chicken_agent : Agent
         if (transform.position.y < -1.0f)
         {
             PlayRandomDeathSound();
+            PlayDeathEffect();
             AddReward(-10.0f); // Flinke straf voor vallen!
             TriggerLevelReset();
             return;
@@ -251,9 +256,12 @@ public class chicken_agent : Agent
 
     private void OnCollisionEnter(Collision collision)
     {
+        if (isDead) return;
+        
         if (collision.gameObject.CompareTag("Bullet"))
         {
             PlayRandomDeathSound();
+            PlayDeathEffect();
             AddReward(-10.0f);
             TriggerLevelReset();
         }
@@ -362,6 +370,17 @@ public class chicken_agent : Agent
             AudioClip clipToPlay = deathSounds[randomIndex];
             
             AudioSource.PlayClipAtPoint(clipToPlay, transform.position);
+        }
+    }
+    private void PlayDeathEffect()
+    {
+        if (featherExplosionPrefab != null)
+        {
+            // Spawn de explosie op de huidige positie van de kip
+            GameObject explosion = Instantiate(featherExplosionPrefab, transform.position, Quaternion.identity);
+            
+            // Vernietig het particle object na 3 seconden om het geheugen schoon te houden
+            Destroy(explosion, 3f); 
         }
     }
 }

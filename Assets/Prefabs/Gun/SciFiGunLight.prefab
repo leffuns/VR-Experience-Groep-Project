@@ -331,7 +331,7 @@ MonoBehaviour:
   bulletPrefab: {fileID: 1564502442511324558, guid: 4f43233cf37a0ca47a273df727b6a8cb, type: 3}
   spawnPoint: {fileID: 5832812384836414121}
   bulletVelocity: 30
-  pewSound: {fileID: 8300000, guid: 86e4218a302a3ae488382f085afaeef1, type: 3}
+  pewSound: {fileID: 8300000, guid: 95213fe76ff28e7428aba3763b7ce133, type: 3}
   triggerInput: {fileID: 83097790271614945, guid: c348712bda248c246b8c49b3db54643f, type: 3}
 --- !u!65 &1048385138072405215
 BoxCollider:
