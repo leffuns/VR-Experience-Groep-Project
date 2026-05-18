@@ -192,7 +192,14 @@ MonoBehaviour:
   obstaclesLayer:
     serializedVersion: 2
     m_Bits: 4294967232
-  deathSounds: []
+  deathSounds:
+  - {fileID: 8300000, guid: 7174a3ee22cb44995846c013fafbc52e, type: 3}
+  - {fileID: 8300000, guid: 2ae66a5db2d6842a2aca7d9524fb1e73, type: 3}
+  - {fileID: 8300000, guid: 952f2664b05dc46b9a4998f0e23c9dfd, type: 3}
+  - {fileID: 8300000, guid: 91f0296792cca46e787faf162d1c709e, type: 3}
+  - {fileID: 8300000, guid: ed2571f4693e64096b15ff8e7cb6f386, type: 3}
+  audioMinRadius: 5
+  audioMaxRadius: 120
   featherExplosionPrefab: {fileID: 3525805272322984561, guid: f39f44dfb0e654c4c88fdc2147a59186, type: 3}
   maxHonger: 100
   hongerAfnamePerStap: 0.1

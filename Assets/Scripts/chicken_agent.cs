@@ -27,6 +27,10 @@ public class chicken_agent : Agent
     [Header("Audio")]
     [Tooltip("Drag your different chicken death sounds here")]
     public AudioClip[] deathSounds;
+    [Range(1f, 50f)] [Tooltip("Tot hoeveel meter het geluid op z'n allerhardst te horen is.")]
+    public float audioMinRadius = 5f;
+    [Range(10f, 200f)] [Tooltip("De maximale afstand in meters waarop je het geluid nog net kunt horen.")]
+    public float audioMaxRadius = 60f;
 
     [Header("Visual Effects")]
     [Tooltip("Sleep je veren-explosie prefab hierin")]
@@ -369,8 +373,35 @@ public class chicken_agent : Agent
             int randomIndex = Random.Range(0, deathSounds.Length);
             AudioClip clipToPlay = deathSounds[randomIndex];
             
-            AudioSource.PlayClipAtPoint(clipToPlay, transform.position);
+            PlayCustom3DSound(clipToPlay, transform.position, audioMinRadius, audioMaxRadius);
         }
+    }
+
+    private void PlayCustom3DSound(AudioClip clip, Vector3 position, float minDistance, float maxDistance)
+    {
+        // Maak een tijdelijk onzichtbaar object aan in de ruimte
+        GameObject tempAudioObject = new GameObject("Temp3DAudio");
+        tempAudioObject.transform.position = position;
+        
+        // Voeg een AudioSource toe en koppel het geluidsbestand
+        AudioSource audioSource = tempAudioObject.AddComponent<AudioSource>();
+        audioSource.clip = clip;
+        
+        // Zet Spatial Blend op 1.0 voor VOLLEDIG 3D ruimtelijk geluid
+        audioSource.spatialBlend = 1.0f; 
+        
+        // Hier stellen we jouw aangepaste radius in!
+        audioSource.minDistance = minDistance; 
+        audioSource.maxDistance = maxDistance;
+        
+        // Linear zorgt ervoor dat het geluid heel natuurlijk en gelijkmatig wegfadet
+        audioSource.rolloffMode = AudioRolloffMode.Linear; 
+        
+        // Speel het geluid af
+        audioSource.Play();
+        
+        // Verwijder het tijdelijke object automatisch zodra het geluidsfragment is afgelopen
+        Destroy(tempAudioObject, clip.length);
     }
     private void PlayDeathEffect()
     {
