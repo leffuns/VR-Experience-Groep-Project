@@ -188,11 +188,14 @@ public class chicken_agent : Agent
         // Reset deze kip z'n beloningen/metrics
         EndEpisode();
 
-        // Zoek de spawner en laat die alles in het level opnieuw spawnen
+        // Deactiveer de kip zodat deze niet meer beweegt of updates krijgt
+        gameObject.SetActive(false);
+
+        // Zoek de spawner en laat die controleren of alle kippen dood zijn
         LevelSpawner spawner = GetComponentInParent<LevelSpawner>();
         if (spawner != null)
         {
-            spawner.ResetLevel();
+            spawner.CheckAllChickensDeadAndReset();
         }
     }
 
