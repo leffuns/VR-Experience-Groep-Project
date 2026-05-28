@@ -1,0 +1,65 @@
+{
+    "Sammy": {
+        "checkpoints": [
+            {
+                "steps": 4999949,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-4999949.onnx",
+                "reward": 2.9356235253314176,
+                "creation_time": 1779992584.940706,
+                "auxillary_file_paths": [
+                    "results/XR_Test_01/Sammy/Sammy-4999949.pt"
+                ]
+            },
+            {
+                "steps": 5000013,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-5000013.onnx",
+                "reward": 2.9356235253314176,
+                "creation_time": 1779992584.957802,
+                "auxillary_file_paths": [
+                    "results/XR_Test_01/Sammy/Sammy-5000013.pt"
+                ]
+            },
+            {
+                "steps": 5499998,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-5499998.onnx",
+                "reward": 2.106291875243187,
+                "creation_time": 1779994112.77182,
+                "auxillary_file_paths": [
+                    "results/XR_Test_01/Sammy/Sammy-5499998.pt"
+                ]
+            },
+            {
+                "steps": 5999998,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-5999998.onnx",
+                "reward": -1.602289899190267,
+                "creation_time": 1779995724.916414,
+                "auxillary_file_paths": [
+                    "results/XR_Test_01/Sammy/Sammy-5999998.pt"
+                ]
+            },
+            {
+                "steps": 6000126,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-6000126.onnx",
+                "reward": -1.602289899190267,
+                "creation_time": 1779995724.942605,
+                "auxillary_file_paths": [
+                    "results/XR_Test_01/Sammy/Sammy-6000126.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 6000126,
+            "file_path": "results/XR_Test_01/Sammy.onnx",
+            "reward": -1.602289899190267,
+            "creation_time": 1779995724.942605,
+            "auxillary_file_paths": [
+                "results/XR_Test_01/Sammy/Sammy-6000126.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "1.2.0.dev0",
+        "torch_version": "2.8.0"
+    }
+}
