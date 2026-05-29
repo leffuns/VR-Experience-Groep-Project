@@ -1,0 +1,65 @@
+{
+    "Sammy": {
+        "checkpoints": [
+            {
+                "steps": 4499896,
+                "file_path": "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-4499896.onnx",
+                "reward": null,
+                "creation_time": 1780078323.156122,
+                "auxillary_file_paths": [
+                    "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-4499896.pt"
+                ]
+            },
+            {
+                "steps": 4999980,
+                "file_path": "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-4999980.onnx",
+                "reward": null,
+                "creation_time": 1780078971.4936953,
+                "auxillary_file_paths": [
+                    "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-4999980.pt"
+                ]
+            },
+            {
+                "steps": 5499880,
+                "file_path": "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-5499880.onnx",
+                "reward": null,
+                "creation_time": 1780079610.1090083,
+                "auxillary_file_paths": [
+                    "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-5499880.pt"
+                ]
+            },
+            {
+                "steps": 5999884,
+                "file_path": "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-5999884.onnx",
+                "reward": null,
+                "creation_time": 1780080270.7040489,
+                "auxillary_file_paths": [
+                    "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-5999884.pt"
+                ]
+            },
+            {
+                "steps": 6000140,
+                "file_path": "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-6000140.onnx",
+                "reward": null,
+                "creation_time": 1780080270.7893465,
+                "auxillary_file_paths": [
+                    "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-6000140.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 6000140,
+            "file_path": "results\\reward_exploratie_nick_V2\\Sammy.onnx",
+            "reward": null,
+            "creation_time": 1780080270.7893465,
+            "auxillary_file_paths": [
+                "results\\reward_exploratie_nick_V2\\Sammy\\Sammy-6000140.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "0.30.0",
+        "torch_version": "1.7.1+cu110"
+    }
+}

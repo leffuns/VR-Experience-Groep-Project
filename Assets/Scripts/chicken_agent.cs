@@ -27,9 +27,11 @@ public class chicken_agent : Agent
     [Header("Audio")]
     [Tooltip("Drag your different chicken death sounds here")]
     public AudioClip[] deathSounds;
-    [Range(1f, 50f)] [Tooltip("Tot hoeveel meter het geluid op z'n allerhardst te horen is.")]
+    [Range(1f, 50f)]
+    [Tooltip("Tot hoeveel meter het geluid op z'n allerhardst te horen is.")]
     public float audioMinRadius = 5f;
-    [Range(10f, 200f)] [Tooltip("De maximale afstand in meters waarop je het geluid nog net kunt horen.")]
+    [Range(10f, 200f)]
+    [Tooltip("De maximale afstand in meters waarop je het geluid nog net kunt horen.")]
     public float audioMaxRadius = 60f;
 
     [Header("Visual Effects")]
@@ -169,7 +171,7 @@ public class chicken_agent : Agent
 
         if (huidigeHonger <= 0)
         {
-            AddReward(-15.0f);
+            AddReward(-5.0f);
             TriggerLevelReset();
             return;
         }
@@ -180,9 +182,9 @@ public class chicken_agent : Agent
 
         if (zietXROrigin)
         {
-            // Volle kip (angst≈1.0): -0.01/stap → vluchten!
-            // Hongerige kip (angst≈0.1): -0.001/stap → acceptabel risico
-            AddReward(-0.01f * angstFactor);
+            // Volle kip (angst≈1.0): -0.05/stap → direct wegduiken!
+            // Hongerige kip (angst≈0.1): -0.005/stap → nog steeds voelbaar
+            AddReward(-0.05f * angstFactor);
         }
         else
         {
@@ -190,48 +192,30 @@ public class chicken_agent : Agent
             AddReward(0.006f);
         }
 
-        // [6] SNACK PROXIMITY — vloeiende leidraad naar dichtstbijzijnde snack
-        float dichtsteAfstand = float.MaxValue;
-        foreach (GameObject snack in snacks)
-        {
-            if (snack != null && snack.activeSelf)
-            {
-                float dist = Vector3.Distance(transform.position, snack.transform.position);
-                if (dist < dichtsteAfstand) dichtsteAfstand = dist;
-            }
-        }
-        if (dichtsteAfstand < detectieRadius)
-        {
-            // Hoe hongeriger de kip, hoe meer proximity reward.
-            float hongerDeficit = 1f - (huidigeHonger / maxHonger);
-            float proximityReward = 0.002f * (1f - dichtsteAfstand / detectieRadius) * hongerDeficit;
-            AddReward(proximityReward);
-        }
+        float moveX = actions.ContinuousActions[0];
+        float moveZ = actions.ContinuousActions[1];
 
-        // [7] BEWEGING
-        float moveX = Input.GetAxisRaw("Horizontal");
-        float moveZ = Input.GetAxisRaw("Vertical");
+        float threshold = 0.1f;
+        if (Mathf.Abs(moveX) < threshold) moveX = 0f;
+        if (Mathf.Abs(moveZ) < threshold) moveZ = 0f;
 
-        if (moveX == 0 && moveZ == 0)
-        {
-            moveX = actions.ContinuousActions[0];
-            moveZ = actions.ContinuousActions[1];
-        }
-
-        targetDirection = new Vector3(moveX, 0, moveZ).normalized;
+        if (moveX != 0f || moveZ != 0f)
+            targetDirection = new Vector3(moveX, 0, moveZ).normalized;
+        else
+            targetDirection = Vector3.zero;
     }
 
-    public override void Heuristic(in ActionBuffers actionsOut)
-    {
-        ActionSegment<float> continuousActions = actionsOut.ContinuousActions;
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
+    // public override void Heuristic(in ActionBuffers actionsOut)
+    // {
+    //     ActionSegment<float> continuousActions = actionsOut.ContinuousActions;
+    //     float h = Input.GetAxisRaw("Horizontal");
+    //     float v = Input.GetAxisRaw("Vertical");
 
-        Debug.Log($"[Heuristic] Input - Horizontal: {h}, Vertical: {v}");
+    //     Debug.Log($"[Heuristic] Input - Horizontal: {h}, Vertical: {v}");
 
-        continuousActions[0] = h;
-        continuousActions[1] = v;
-    }
+    //     continuousActions[0] = h;
+    //     continuousActions[1] = v;
+    // }
 
     private void FixedUpdate()
     {
@@ -281,7 +265,7 @@ public class chicken_agent : Agent
     private void OnCollisionEnter(Collision collision)
     {
         if (isDead) return;
-        
+
         if (collision.gameObject.CompareTag("Bullet"))
         {
             PlayRandomDeathSound();
@@ -393,7 +377,7 @@ public class chicken_agent : Agent
         {
             int randomIndex = Random.Range(0, deathSounds.Length);
             AudioClip clipToPlay = deathSounds[randomIndex];
-            
+
             PlayCustom3DSound(clipToPlay, transform.position, audioMinRadius, audioMaxRadius);
         }
     }
@@ -403,24 +387,24 @@ public class chicken_agent : Agent
         // Maak een tijdelijk onzichtbaar object aan in de ruimte
         GameObject tempAudioObject = new GameObject("Temp3DAudio");
         tempAudioObject.transform.position = position;
-        
+
         // Voeg een AudioSource toe en koppel het geluidsbestand
         AudioSource audioSource = tempAudioObject.AddComponent<AudioSource>();
         audioSource.clip = clip;
-        
+
         // Zet Spatial Blend op 1.0 voor VOLLEDIG 3D ruimtelijk geluid
-        audioSource.spatialBlend = 1.0f; 
-        
+        audioSource.spatialBlend = 1.0f;
+
         // Hier stellen we jouw aangepaste radius in!
-        audioSource.minDistance = minDistance; 
+        audioSource.minDistance = minDistance;
         audioSource.maxDistance = maxDistance;
-        
+
         // Linear zorgt ervoor dat het geluid heel natuurlijk en gelijkmatig wegfadet
-        audioSource.rolloffMode = AudioRolloffMode.Linear; 
-        
+        audioSource.rolloffMode = AudioRolloffMode.Linear;
+
         // Speel het geluid af
         audioSource.Play();
-        
+
         // Verwijder het tijdelijke object automatisch zodra het geluidsfragment is afgelopen
         Destroy(tempAudioObject, clip.length);
     }
@@ -430,9 +414,9 @@ public class chicken_agent : Agent
         {
             // Spawn de explosie op de huidige positie van de kip
             GameObject explosion = Instantiate(featherExplosionPrefab, transform.position, Quaternion.identity);
-            
+
             // Vernietig het particle object na 3 seconden om het geheugen schoon te houden
-            Destroy(explosion, 3f); 
+            Destroy(explosion, 3f);
         }
     }
 }
