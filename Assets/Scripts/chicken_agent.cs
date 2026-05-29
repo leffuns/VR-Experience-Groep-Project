@@ -88,10 +88,13 @@ public class chicken_agent : Agent
     {
         if (isDead)
         {
-            sensor.AddObservation(Vector3.zero); // 3
-            sensor.AddObservation(Vector3.zero); // 3
-            sensor.AddObservation(0f);           // 1
-            sensor.AddObservation(0f);           // 1
+            sensor.AddObservation(Vector3.zero); // 3  — positie
+            sensor.AddObservation(Vector3.zero); // 3  — speler positie
+            sensor.AddObservation(0f);           // 1  — ziet speler?
+            sensor.AddObservation(0f);           // 1  — honger
+            sensor.AddObservation(Vector3.zero); // 3  — snack 1
+            sensor.AddObservation(Vector3.zero); // 3  — snack 2
+            sensor.AddObservation(Vector3.zero); // 3  — snack 3
             return;
         }
 
@@ -141,64 +144,81 @@ public class chicken_agent : Agent
     {
         if (isDead) return;
 
-        // Controleer of de kip van de rand is gevlogen/gevallen
+        // [1] LIVING COST — maakt stilzitten netto kosten
+        AddReward(-0.002f);
+
+        // [2] VALCONTROLE — van de rand vallen is fataal
         if (transform.position.y < -1.0f)
         {
             PlayRandomDeathSound();
             PlayDeathEffect();
-            AddReward(-10.0f); // Flinke straf voor vallen!
+            AddReward(-20.0f);
             TriggerLevelReset();
             return;
         }
 
-        Debug.Log("[OnActionReceived] Called!");
-
-        // Direct input as primary source
-        float moveX = Input.GetAxisRaw("Horizontal");
-        float moveZ = Input.GetAxisRaw("Vertical");
-
-        Debug.Log($"[Input] Direct - X: {moveX}, Z: {moveZ}");
-
-        // Fallback to ML-Agent actions if no input
-        if (moveX == 0 && moveZ == 0)
+        // [3] RANDWAARSCHUWING — subtiele straf voor rand naderen
+        if (transform.position.y < -0.3f)
         {
-            moveX = actions.ContinuousActions[0];
-            moveZ = actions.ContinuousActions[1];
-            Debug.Log($"[Actions] ML-Agent fallback - X: {moveX}, Z: {moveZ}");
+            float t = Mathf.InverseLerp(-1.0f, -0.3f, transform.position.y);
+            AddReward(-0.02f * t);
         }
 
-        Debug.Log($"[OnActionReceived] Final Actions - X: {moveX}, Z: {moveZ}");
-
-        targetDirection = new Vector3(moveX, 0, moveZ).normalized;
-
-        Debug.Log($"[Movement] Move direction: {targetDirection}, Speed: {targetDirection * moveSpeed}");
-
-        // Honger systeem verwerken
+        // [4] HONGER UPDATE
         huidigeHonger -= hongerAfnamePerStap;
 
         if (huidigeHonger <= 0)
         {
-            // Uitgehongerd = dood. Flinke straf, net als bij een kogel!
-            AddReward(-10.0f);
+            AddReward(-15.0f);
             TriggerLevelReset();
-            return; // Stop verdere berekeningen in deze stap
+            return;
         }
 
+        // [5] HIDING vs EXPOSURE (met honger-afhankelijke angst)
         bool zietXROrigin = KanXROriginZien();
+        float angstFactor = huidigeHonger / maxHonger;
 
         if (zietXROrigin)
         {
-            // Dynamische angst: de straf voor gezien worden neemt af naarmate de kip hongeriger wordt.
-            // Als de kip bijna uithongert (huidigeHonger is laag), is de angstfactor bijna 0,
-            // waardoor hij de schuilplaats durft te verlaten om snacks te zoeken.
-            float angstFactor = huidigeHonger / maxHonger;
+            // Volle kip (angst≈1.0): -0.01/stap → vluchten!
+            // Hongerige kip (angst≈0.1): -0.001/stap → acceptabel risico
             AddReward(-0.01f * angstFactor);
         }
         else
         {
-            // Beloning voor veilig schuilen
-            AddReward(0.01f);
+            // Veilige baseline: netto +0.004 na living cost
+            AddReward(0.006f);
         }
+
+        // [6] SNACK PROXIMITY — vloeiende leidraad naar dichtstbijzijnde snack
+        float dichtsteAfstand = float.MaxValue;
+        foreach (GameObject snack in snacks)
+        {
+            if (snack != null && snack.activeSelf)
+            {
+                float dist = Vector3.Distance(transform.position, snack.transform.position);
+                if (dist < dichtsteAfstand) dichtsteAfstand = dist;
+            }
+        }
+        if (dichtsteAfstand < detectieRadius)
+        {
+            // Hoe hongeriger de kip, hoe meer proximity reward.
+            float hongerDeficit = 1f - (huidigeHonger / maxHonger);
+            float proximityReward = 0.002f * (1f - dichtsteAfstand / detectieRadius) * hongerDeficit;
+            AddReward(proximityReward);
+        }
+
+        // [7] BEWEGING
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveZ = Input.GetAxisRaw("Vertical");
+
+        if (moveX == 0 && moveZ == 0)
+        {
+            moveX = actions.ContinuousActions[0];
+            moveZ = actions.ContinuousActions[1];
+        }
+
+        targetDirection = new Vector3(moveX, 0, moveZ).normalized;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -266,7 +286,7 @@ public class chicken_agent : Agent
         {
             PlayRandomDeathSound();
             PlayDeathEffect();
-            AddReward(-10.0f);
+            AddReward(-20.0f);
             TriggerLevelReset();
         }
     }
@@ -325,8 +345,9 @@ public class chicken_agent : Agent
                 other.gameObject.SetActive(false);
                 huidigeHonger = Mathf.Min(huidigeHonger + hongerHerstelPerSnack, maxHonger);
 
-                // Geef een flinke beloning voor het zoeken van voedsel!
-                AddReward(0.5f);
+                // Beloning schaalt met honger: volle kip krijgt bijna niks, hongerige kip krijgt volle reward
+                float hongerDeficit = 1f - (huidigeHonger / maxHonger);
+                AddReward(1.5f * hongerDeficit);
             }
         }
     }
