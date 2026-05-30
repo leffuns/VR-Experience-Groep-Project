@@ -50,6 +50,12 @@ public class chicken_agent : Agent
     [HideInInspector]
     public bool isDead = false;
 
+    [Header("Boundaries")]
+    [Tooltip("Muren staan op ±12.5. Hierbuiten = dood.")]
+    public float wallBoundary = 12.5f;
+    [Tooltip("Waarschuwingszone: kleine straf vanaf deze afstand tot de muur.")]
+    public float warningBoundary = 11f;
+
     [Header("LOS Cache")]
     [Tooltip("Minimale afstand (in meters) die kip of hunter moet verplaatsten voordat LOS opnieuw berekend wordt")]
     public float losCacheAfstand = 1.0f;
@@ -98,7 +104,7 @@ public class chicken_agent : Agent
 
     public override void OnEpisodeBegin()
     {
-        rb.linearVelocity = Vector3.zero;
+        if (rb != null) rb.linearVelocity = Vector3.zero;
 
         // Vul de maag weer bij de start
         huidigeHonger = maxHonger;
@@ -201,6 +207,26 @@ public class chicken_agent : Agent
             AddReward(-0.02f * t);
         }
 
+        // [3b] X/Z BOUNDARY — buiten het veld is fataal
+        Vector3 pos = transform.position;
+
+        if (Mathf.Abs(pos.x) > wallBoundary || Mathf.Abs(pos.z) > wallBoundary)
+        {
+            PlayRandomDeathSound();
+            PlayDeathEffect();
+            AddReward(-20.0f);
+            TriggerLevelReset();
+            return;
+        }
+
+        if (Mathf.Abs(pos.x) > warningBoundary || Mathf.Abs(pos.z) > warningBoundary)
+        {
+            float tx = Mathf.InverseLerp(warningBoundary, wallBoundary, Mathf.Abs(pos.x));
+            float tz = Mathf.InverseLerp(warningBoundary, wallBoundary, Mathf.Abs(pos.z));
+            float t = Mathf.Max(tx, tz);
+            AddReward(-0.02f * t);
+        }
+
         // [4] HONGER UPDATE
         huidigeHonger -= hongerAfnamePerStap;
 
@@ -211,13 +237,14 @@ public class chicken_agent : Agent
             return;
         }
 
-        // [5] HIDING vs EXPOSURE (met honger-afhankelijke angst)
-        float angstFactor = huidigeHonger / maxHonger;
+        // [5] HIDING vs EXPOSURE (met honger-afhankelijke angst — kwadratisch)
+        float hongerRatio = huidigeHonger / maxHonger;
+        float angstFactor = hongerRatio * hongerRatio;
 
         if (zietXROriginCache)
         {
             // Volle kip (angst≈1.0): -0.05/stap → direct wegduiken!
-            // Hongerige kip (angst≈0.1): -0.005/stap → nog steeds voelbaar
+            // Hongerige kip (angst≈0.0025): -0.000125/stap → nauwelijks voelbaar
             AddReward(-0.05f * angstFactor);
         }
         else
@@ -253,6 +280,8 @@ public class chicken_agent : Agent
 
     private void FixedUpdate()
     {
+        if (rb == null) return;
+
         if (targetDirection != Vector3.zero)
         {
             Vector3 velocity = targetDirection * moveSpeed;
@@ -345,9 +374,12 @@ public class chicken_agent : Agent
 
         // Verberg de kip en zet colliders/physics uit zodat de verbinding met Python open blijft
         if (col != null) col.enabled = false;
-        foreach (Renderer r in renderers)
+        if (renderers != null)
         {
-            if (r != null) r.enabled = false;
+            foreach (Renderer r in renderers)
+            {
+                if (r != null) r.enabled = false;
+            }
         }
         if (rb != null)
         {
@@ -368,9 +400,12 @@ public class chicken_agent : Agent
 
         // Schakel visuals en colliders weer in
         if (col != null) col.enabled = true;
-        foreach (Renderer r in renderers)
+        if (renderers != null)
         {
-            if (r != null) r.enabled = true;
+            foreach (Renderer r in renderers)
+            {
+                if (r != null) r.enabled = true;
+            }
         }
         if (rb != null)
         {
@@ -379,6 +414,7 @@ public class chicken_agent : Agent
         }
 
         transform.position = spawnPosition;
+        Debug.Log($"[SPAWN] Revive: kip={gameObject.name} naar pos={spawnPosition:F2}");
 
         // Reset de episode voor ML-Agents
         EndEpisode();
@@ -391,11 +427,13 @@ public class chicken_agent : Agent
             if (huidigeHonger < maxHonger - 5)
             {
                 other.gameObject.SetActive(false);
-                huidigeHonger = Mathf.Min(huidigeHonger + hongerHerstelPerSnack, maxHonger);
 
-                // Beloning schaalt met honger: volle kip krijgt bijna niks, hongerige kip krijgt volle reward
-                float hongerDeficit = 1f - (huidigeHonger / maxHonger);
-                AddReward(1.5f * hongerDeficit);
+                // Beloning schaalt kwadratisch met hongerdefict
+                float hongerRatio = huidigeHonger / maxHonger;
+                float hongerDeficit = 1f - hongerRatio;
+                AddReward(3.0f * hongerDeficit * hongerDeficit);
+
+                huidigeHonger = Mathf.Min(huidigeHonger + hongerHerstelPerSnack, maxHonger);
             }
         }
     }

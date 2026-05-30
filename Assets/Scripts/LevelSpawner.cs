@@ -285,6 +285,7 @@ public class LevelSpawner : MonoBehaviour
             originComponent.MatchOriginUpCameraForward(Vector3.up, initialPlayerRotation * Vector3.forward);
             
             xrOriginPosition = originComponent.transform.position;
+            Debug.Log($"[SPAWN] ResetPlayerPosition (XR Origin): pos={xrOriginPosition:F2}");
             return;
         }
 
@@ -314,6 +315,7 @@ public class LevelSpawner : MonoBehaviour
         if (cc != null) cc.enabled = true;
 
         xrOriginPosition = playerRoot.position;
+        Debug.Log($"[SPAWN] ResetPlayerPosition (fallback): pos={xrOriginPosition:F2}");
     }
 
     // ============================================================
@@ -361,6 +363,8 @@ public class LevelSpawner : MonoBehaviour
             {
                 agent.snacks = allSnacks;
                 agent.xrOrigin = playerTransform;
+                agent.warningBoundary = spawnMaxX;
+                agent.wallBoundary = spawnMaxX + 1.5f;
                 agent.Revive(pos);
             }
             else
@@ -425,31 +429,28 @@ public class LevelSpawner : MonoBehaviour
     private Vector3 GetPositionAvoidingPlayer()
     {
         Vector3 playerXZ = new Vector3(xrOriginPosition.x, 0, xrOriginPosition.z);
-        float checkRadius = 1.0f;  // Radius to check for collision
+        float checkRadius = 1.0f;
 
         for (int attempt = 0; attempt < 50; attempt++)
         {
             Vector3 candidate = GetRandomPosition();
             Vector3 candidateXZ = new Vector3(candidate.x, 0, candidate.z);
+            float dist = Vector3.Distance(candidateXZ, playerXZ);
+            bool afstandOK = dist >= xrOriginMinDistance;
+            bool obstaclesOK = obstaclesLayer.value == 0 || Physics.OverlapSphere(candidate, checkRadius, obstaclesLayer).Length == 0;
 
-            if (Vector3.Distance(candidateXZ, playerXZ) >= xrOriginMinDistance)
-            {
-                // Check if position is free of obstacles
-                if (obstaclesLayer.value != 0 && 
-                    Physics.OverlapSphere(candidate, checkRadius, obstaclesLayer).Length == 0)
-                {
-                    return candidate;
-                }
-                else if (obstaclesLayer.value == 0)
-                {
-                    // If no layer set, just return position
-                    return candidate;
-                }
-            }
+            Debug.Log($"[SPAWN] Poging {attempt}: cand=({candidate.x:F1},{candidate.z:F1}) " +
+                      $"afstand={dist:F2}(min={xrOriginMinDistance}) obstakels={obstaclesOK} " +
+                      $"playerXZ=({playerXZ.x:F1},{playerXZ.z:F1})");
+
+            if (afstandOK && obstaclesOK)
+                return candidate;
         }
 
-        // Fallback: return random position even if too close to player
-        return GetRandomPosition();
+        Vector3 fallback = GetRandomPosition();
+        Debug.LogWarning($"[SPAWN] FALLBACK na 50 pogingen! return=({fallback.x:F1},{fallback.z:F1}) " +
+                         $"playerXZ=({playerXZ.x:F1},{playerXZ.z:F1})");
+        return fallback;
     }
 
     /// <summary>
@@ -482,8 +483,8 @@ public class LevelSpawner : MonoBehaviour
         SpawnObstacles();
         ResetPlayerPosition();
         SpawnSnacks();
-        Physics.SyncTransforms();
         RespawnOrUpdateChickens();
+        Physics.SyncTransforms();
     }
 
     /// <summary>

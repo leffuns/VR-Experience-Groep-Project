@@ -1,0 +1,38 @@
+{
+    "Sammy": {
+        "checkpoints": [
+            {
+                "steps": 499976,
+                "file_path": "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-499976.onnx",
+                "reward": null,
+                "creation_time": 1780168698.784116,
+                "auxillary_file_paths": [
+                    "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-499976.pt"
+                ]
+            },
+            {
+                "steps": 723640,
+                "file_path": "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-723640.onnx",
+                "reward": -23.606451827287675,
+                "creation_time": 1780169105.1796567,
+                "auxillary_file_paths": [
+                    "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-723640.pt"
+                ]
+            }
+        ],
+        "final_checkpoint": {
+            "steps": 723640,
+            "file_path": "results\\reward_exploratie_nick_V3\\Sammy.onnx",
+            "reward": -23.606451827287675,
+            "creation_time": 1780169105.1796567,
+            "auxillary_file_paths": [
+                "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-723640.pt"
+            ]
+        }
+    },
+    "metadata": {
+        "stats_format_version": "0.3.0",
+        "mlagents_version": "0.30.0",
+        "torch_version": "1.7.1+cu110"
+    }
+}
