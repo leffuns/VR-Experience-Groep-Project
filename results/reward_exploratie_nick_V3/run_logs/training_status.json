@@ -2,31 +2,22 @@
     "Sammy": {
         "checkpoints": [
             {
-                "steps": 499976,
-                "file_path": "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-499976.onnx",
+                "steps": 453240,
+                "file_path": "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-453240.onnx",
                 "reward": null,
-                "creation_time": 1780168698.784116,
+                "creation_time": 1780169972.8854733,
                 "auxillary_file_paths": [
-                    "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-499976.pt"
-                ]
-            },
-            {
-                "steps": 723640,
-                "file_path": "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-723640.onnx",
-                "reward": -23.606451827287675,
-                "creation_time": 1780169105.1796567,
-                "auxillary_file_paths": [
-                    "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-723640.pt"
+                    "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-453240.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 723640,
+            "steps": 453240,
             "file_path": "results\\reward_exploratie_nick_V3\\Sammy.onnx",
-            "reward": -23.606451827287675,
-            "creation_time": 1780169105.1796567,
+            "reward": null,
+            "creation_time": 1780169972.8854733,
             "auxillary_file_paths": [
-                "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-723640.pt"
+                "results\\reward_exploratie_nick_V3\\Sammy\\Sammy-453240.pt"
             ]
         }
     },
