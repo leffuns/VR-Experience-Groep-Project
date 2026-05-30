@@ -83,6 +83,7 @@ public class LevelSpawner : MonoBehaviour
             initialPlayerPosition = xrOrigin.position;
             initialPlayerRotation = xrOrigin.rotation;
         }
+        SetupDetectionCollider();
         ResetLevel();
     }
 
@@ -172,14 +173,7 @@ public class LevelSpawner : MonoBehaviour
         for (int i = parent.transform.childCount - 1; i >= 0; i--)
         {
             GameObject child = parent.transform.GetChild(i).gameObject;
-            if (Application.isPlaying)
-            {
-                Destroy(child);
-            }
-            else
-            {
-                DestroyImmediate(child);
-            }
+            DestroyImmediate(child);
         }
     }
 
@@ -488,6 +482,7 @@ public class LevelSpawner : MonoBehaviour
         SpawnObstacles();
         ResetPlayerPosition();
         SpawnSnacks();
+        Physics.SyncTransforms();
         RespawnOrUpdateChickens();
     }
 
@@ -511,5 +506,23 @@ public class LevelSpawner : MonoBehaviour
         {
             ResetLevel();
         }
+    }
+
+    private void SetupDetectionCollider()
+    {
+        if (xrOrigin == null) return;
+
+        Transform existing = xrOrigin.Find("DetectionCollider");
+        if (existing != null) return;
+
+        GameObject detectionObj = new GameObject("DetectionCollider");
+        detectionObj.transform.SetParent(xrOrigin);
+        detectionObj.transform.localPosition = new Vector3(0, 1f, 0);
+
+        detectionObj.layer = LayerMask.NameToLayer("hunter");
+
+        SphereCollider col = detectionObj.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = 1.5f;
     }
 }

@@ -2,7 +2,8 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
-using System.Collections.Generic; // Toegevoegd voor handige sorteerfuncties
+using System.Collections.Generic;
+using System.Text;
 
 /*
     1.  Space Size Aanpassen: We hebben zojuist observaties voor de 3 dichtstbijzijnde snacks toegevoegd.
@@ -49,11 +50,20 @@ public class chicken_agent : Agent
     [HideInInspector]
     public bool isDead = false;
 
+    [Header("LOS Cache")]
+    [Tooltip("Minimale afstand (in meters) die kip of hunter moet verplaatsten voordat LOS opnieuw berekend wordt")]
+    public float losCacheAfstand = 1.0f;
+
     private float huidigeHonger;
     private Rigidbody rb;
     private Vector3 targetDirection;
     private Collider col;
     private Renderer[] renderers;
+    private bool zietXROriginCache;
+    private bool vorigeLOS;
+    private Vector3 laatsteLOSKipPos;
+    private Vector3 laatsteLOSHunterPos;
+    private bool laatsteLOSResultaat;
 
     public override void Initialize()
     {
@@ -61,6 +71,29 @@ public class chicken_agent : Agent
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         col = GetComponent<Collider>();
         renderers = GetComponentsInChildren<Renderer>();
+
+        LogLayerInfo();
+    }
+
+    private void LogLayerInfo()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.Append($"[LOS] obstaclesLayer ({obstaclesLayer.value}): ");
+        for (int i = 0; i < 32; i++)
+        {
+            if ((obstaclesLayer.value & (1 << i)) != 0)
+                sb.Append($"[{i}:{LayerMask.LayerToName(i)}] ");
+        }
+        Debug.Log(sb.ToString());
+
+        sb.Clear();
+        sb.Append($"[LOS] xrOriginLayer ({xrOriginLayer.value}): ");
+        for (int i = 0; i < 32; i++)
+        {
+            if ((xrOriginLayer.value & (1 << i)) != 0)
+                sb.Append($"[{i}:{LayerMask.LayerToName(i)}] ");
+        }
+        Debug.Log(sb.ToString());
     }
 
     public override void OnEpisodeBegin()
@@ -100,9 +133,11 @@ public class chicken_agent : Agent
             return;
         }
 
+        zietXROriginCache = KanXROriginZien();
+
         sensor.AddObservation(transform.localPosition);
         sensor.AddObservation(xrOrigin.localPosition);
-        sensor.AddObservation(KanXROriginZien() ? 1f : 0f);
+        sensor.AddObservation(zietXROriginCache ? 1f : 0f);
 
         // De kip moet weten hoe hongerig hij is. (Genormaliseerd)
         sensor.AddObservation(huidigeHonger / maxHonger);
@@ -177,10 +212,9 @@ public class chicken_agent : Agent
         }
 
         // [5] HIDING vs EXPOSURE (met honger-afhankelijke angst)
-        bool zietXROrigin = KanXROriginZien();
         float angstFactor = huidigeHonger / maxHonger;
 
-        if (zietXROrigin)
+        if (zietXROriginCache)
         {
             // Volle kip (angst≈1.0): -0.05/stap → direct wegduiken!
             // Hongerige kip (angst≈0.1): -0.005/stap → nog steeds voelbaar
@@ -232,34 +266,64 @@ public class chicken_agent : Agent
 
     private bool KanXROriginZien()
     {
+        Vector3 huidigeHunterPos = xrOrigin != null ? xrOrigin.position : Vector3.zero;
+
+        if (Vector3.Distance(transform.position, laatsteLOSKipPos) < losCacheAfstand &&
+            Vector3.Distance(huidigeHunterPos, laatsteLOSHunterPos) < losCacheAfstand)
+        {
+            return laatsteLOSResultaat;
+        }
+
         Collider[] xrOrigins = Physics.OverlapSphere(transform.position, detectieRadius, xrOriginLayer);
+        bool result = false;
+        string blockerMsg = "";
 
         foreach (Collider origin in xrOrigins)
         {
-            if (HasLineOfSight(origin.transform))
+            RaycastHit hit;
+            if (HasLineOfSight(origin.transform, out hit))
             {
-                return true;
+                result = true;
+                break;
             }
+            blockerMsg = $"{hit.transform.name} (Layer {hit.transform.gameObject.layer})";
         }
-        return false;
+
+        laatsteLOSKipPos = transform.position;
+        laatsteLOSHunterPos = huidigeHunterPos;
+        laatsteLOSResultaat = result;
+
+        if (result != vorigeLOS)
+        {
+            string statusMsg = result
+                ? "ZIET HEM — vrij zicht"
+                : $"ZIET HEM NIET — geblokkeerd door: {blockerMsg}";
+            Debug.Log($"[KANZIEN] Status: {statusMsg} | {xrOrigins.Length} colliders | " +
+                      $"kip: {transform.position:F1} | hunter: {(xrOrigin != null ? xrOrigin.position.ToString("F1") : "?")}");
+            vorigeLOS = result;
+        }
+
+        return result;
     }
 
-    private bool HasLineOfSight(Transform target)
+    private bool HasLineOfSight(Transform target, out RaycastHit hitInfo)
     {
         Vector3 startPositie = transform.position + Vector3.up * 0.5f;
         Vector3 targetPositie = target.position + Vector3.up * 0.5f;
         Vector3 direction = targetPositie - startPositie;
+        float afstand = direction.magnitude;
 
-        RaycastHit hit;
-
-        if (Physics.Raycast(startPositie, direction.normalized, out hit, detectieRadius))
+        if (Physics.Raycast(startPositie, direction.normalized, out hitInfo, afstand, obstaclesLayer, QueryTriggerInteraction.Collide))
         {
-            if (hit.transform == target || hit.transform.IsChildOf(target))
-            {
-                return true;
-            }
+            Debug.Log($"[LOS] BLOK: {hitInfo.transform.name} (Layer {hitInfo.transform.gameObject.layer}) " +
+                      $"op afstand {hitInfo.distance:F2}m " +
+                      $"| start:{startPositie:F2} → eind:{targetPositie:F2}");
+            Debug.DrawLine(startPositie, hitInfo.point, Color.red, 5f);
+            return false;
         }
-        return false;
+
+        Debug.DrawLine(startPositie, targetPositie, Color.green, 5f);
+        return true;
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -359,16 +423,25 @@ public class chicken_agent : Agent
         float distance = xrOrigin != null ? Vector3.Distance(transform.position, xrOrigin.position) : 0;
         bool zietSpeler = Application.isPlaying && xrOrigin != null ? KanXROriginZien() : false;
 
-        GUI.Label(new Rect(20, 20, 300, 30), $"Honger: {huidigeHonger:F1} / {maxHonger} ({hungerPct * 100:F1}%)", style);
-        GUI.Label(new Rect(20, 50, 300, 30), $"Afstand tot speler: {distance:F2}m", style);
-        GUI.Label(new Rect(20, 80, 300, 30), $"Ziet speler: {(zietSpeler ? "JA" : "Nee")}", style);
-        GUI.Label(new Rect(20, 110, 300, 30), $"Reward: {GetCumulativeReward():F2}", style);
+        GUI.Label(new Rect(20, 20, 400, 30), $"Honger: {huidigeHonger:F1} / {maxHonger} ({hungerPct * 100:F1}%)", style);
+        GUI.Label(new Rect(20, 50, 400, 30), $"Afstand tot speler: {distance:F2}m", style);
+
+        GUIStyle losStyle = new GUIStyle(style);
+        losStyle.normal.textColor = zietSpeler ? Color.green : Color.red;
+        GUI.Label(new Rect(20, 80, 400, 30), $"Ziet speler: {(zietSpeler ? "JA" : "Nee")}", losStyle);
+
+        float kipDelta = Vector3.Distance(transform.position, laatsteLOSKipPos);
+        float hunterDelta = Vector3.Distance(xrOrigin != null ? xrOrigin.position : Vector3.zero, laatsteLOSHunterPos);
+        bool isCached = kipDelta < losCacheAfstand && hunterDelta < losCacheAfstand;
+        GUI.Label(new Rect(20, 110, 400, 30), $"Cache: {(isCached ? "HIT" : "MISS")} (kipΔ={kipDelta:F2}, hunterΔ={hunterDelta:F2})", style);
+
+        GUI.Label(new Rect(20, 140, 400, 30), $"Reward: {GetCumulativeReward():F2}", style);
 
         if (hungerPct < 0.3f)
         {
             GUIStyle warningStyle = new GUIStyle(style);
             warningStyle.normal.textColor = Color.red;
-            GUI.Label(new Rect(20, 140, 300, 30), "⚠ HONGERING!", warningStyle);
+            GUI.Label(new Rect(20, 170, 400, 30), "⚠ HONGERING!", warningStyle);
         }
     }
     private void PlayRandomDeathSound()
