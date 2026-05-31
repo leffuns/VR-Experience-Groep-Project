@@ -2,58 +2,58 @@
     "Sammy": {
         "checkpoints": [
             {
-                "steps": 4999949,
-                "file_path": "results/XR_Test_01/Sammy/Sammy-4999949.onnx",
-                "reward": 2.9356235253314176,
-                "creation_time": 1779992584.940706,
+                "steps": 10999965,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-10999965.onnx",
+                "reward": 6.668547905981541,
+                "creation_time": 1780235388.482489,
                 "auxillary_file_paths": [
-                    "results/XR_Test_01/Sammy/Sammy-4999949.pt"
+                    "results/XR_Test_01/Sammy/Sammy-10999965.pt"
                 ]
             },
             {
-                "steps": 5000013,
-                "file_path": "results/XR_Test_01/Sammy/Sammy-5000013.onnx",
-                "reward": 2.9356235253314176,
-                "creation_time": 1779992584.957802,
+                "steps": 11000157,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-11000157.onnx",
+                "reward": 6.668547905981541,
+                "creation_time": 1780235388.500843,
                 "auxillary_file_paths": [
-                    "results/XR_Test_01/Sammy/Sammy-5000013.pt"
+                    "results/XR_Test_01/Sammy/Sammy-11000157.pt"
                 ]
             },
             {
-                "steps": 5499998,
-                "file_path": "results/XR_Test_01/Sammy/Sammy-5499998.onnx",
-                "reward": 2.106291875243187,
-                "creation_time": 1779994112.77182,
+                "steps": 11499957,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-11499957.onnx",
+                "reward": 5.419478481014569,
+                "creation_time": 1780236834.788556,
                 "auxillary_file_paths": [
-                    "results/XR_Test_01/Sammy/Sammy-5499998.pt"
+                    "results/XR_Test_01/Sammy/Sammy-11499957.pt"
                 ]
             },
             {
-                "steps": 5999998,
-                "file_path": "results/XR_Test_01/Sammy/Sammy-5999998.onnx",
-                "reward": -1.602289899190267,
-                "creation_time": 1779995724.916414,
+                "steps": 11999940,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-11999940.onnx",
+                "reward": 4.728890236881044,
+                "creation_time": 1780238340.1347442,
                 "auxillary_file_paths": [
-                    "results/XR_Test_01/Sammy/Sammy-5999998.pt"
+                    "results/XR_Test_01/Sammy/Sammy-11999940.pt"
                 ]
             },
             {
-                "steps": 6000126,
-                "file_path": "results/XR_Test_01/Sammy/Sammy-6000126.onnx",
-                "reward": -1.602289899190267,
-                "creation_time": 1779995724.942605,
+                "steps": 12000132,
+                "file_path": "results/XR_Test_01/Sammy/Sammy-12000132.onnx",
+                "reward": 4.728890236881044,
+                "creation_time": 1780238340.155224,
                 "auxillary_file_paths": [
-                    "results/XR_Test_01/Sammy/Sammy-6000126.pt"
+                    "results/XR_Test_01/Sammy/Sammy-12000132.pt"
                 ]
             }
         ],
         "final_checkpoint": {
-            "steps": 6000126,
+            "steps": 12000132,
             "file_path": "results/XR_Test_01/Sammy.onnx",
-            "reward": -1.602289899190267,
-            "creation_time": 1779995724.942605,
+            "reward": 4.728890236881044,
+            "creation_time": 1780238340.155224,
             "auxillary_file_paths": [
-                "results/XR_Test_01/Sammy/Sammy-6000126.pt"
+                "results/XR_Test_01/Sammy/Sammy-12000132.pt"
             ]
         }
     },
